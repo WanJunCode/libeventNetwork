@@ -15,11 +15,6 @@ MainServer::MainServer(int port)
     transport_ = new MyTransport(this);
 }
 
-struct event_base *MainServer::getBase()
-{
-    return main_base;
-}
-
 MainServer::~MainServer()
 {
     event_base_free(main_base);
@@ -71,15 +66,19 @@ void MainServer::handlerConn(void *args)
 
     // 将接受的 TSocket 包装成 TConnection ， 使用 main_server->eventbase
     TConnection *conn;
-    if(connectionQueue.empty()){
-        conn = new TConnection(sock, this);
-        printf("新建一个 TConnection \n");
-    }else{
-        conn= connectionQueue.front();
-        connectionQueue.pop();
-        conn->setSocket(sock);
-        printf("复用一个 TConnection \n");
+    {
+        std::lock_guard<std::mutex> locker(connMutex);
+        if(connectionQueue.empty()){
+            conn = new TConnection(sock, this);
+            printf("新建一个 TConnection \n");
+        }else{
+            conn= connectionQueue.front();
+            connectionQueue.pop();
+            conn->setSocket(sock);
+            printf("复用一个 TConnection \n");
+        }
     }
+
 
     if (conn)
     {
@@ -106,6 +105,11 @@ void MainServer::returnTConnection(TConnection *conn)
     conn->setSocket(NULL);
     connectionQueue.push(conn);
     printf("main server 回收 end\n");
+}
+
+struct event_base *MainServer::getBase()
+{
+    return main_base;
 }
 
 void MainServer::stdin_cb(evutil_socket_t stdin_fd, short what, void *args)

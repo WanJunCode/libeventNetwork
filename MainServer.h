@@ -8,6 +8,7 @@
 #include <event.h>
 #include <vector>
 #include <queue>
+#include <mutex>
 
 class TSocket;
 class MyTransport;
@@ -28,13 +29,13 @@ private:
   struct event *ev_stdin;
   int port_;
   MyTransport *transport_;
+  std::mutex connMutex;
 
   std::vector<TConnection *> activeTConnection;
   std::queue<TConnection *> connectionQueue;
 
-public:
+private:
   static void stdin_cb(evutil_socket_t stdin_fd, short what, void *args);
-
 };
 
 #endif
