@@ -102,10 +102,24 @@ void MyTransport::returnTSocket(TSocket *sock)
     auto iter = activeSocket.find(sock->getSocketFD());
     if (iter != activeSocket.end())
     {
-        printf("active socket map erase sock [%lu]\n",*iter);
+        printf("active socket map erase sock [%d]\n",iter->first);
         activeSocket.erase(iter);
+    }
+    else
+    {
+        printf("activeSocket 中没找到...\n");
     }
     // 关闭回收的TSocket连接
     sock->close();
     socketQueue.push(sock);
+}
+
+int MyTransport::getActiveSize()
+{
+    return activeSocket.size();
+}
+
+int MyTransport::getSocketQueue()
+{
+    return socketQueue.size();
 }

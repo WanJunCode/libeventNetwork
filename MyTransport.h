@@ -21,6 +21,8 @@ class MyTransport
     void listen(int port);
     TSocket *accept();
     void returnTSocket(TSocket *sock);
+    int getActiveSize();
+    int getSocketQueue();
 
   public:
     static void do_accept(struct evconnlistener *listener, evutil_socket_t client_fd, struct sockaddr *addr, int socklen, void *args);
@@ -30,7 +32,7 @@ class MyTransport
     struct evconnlistener *listener_;
     struct event_base *main_base_;
     std::mutex connMutex_;
-    
+
     std::map<evutil_socket_t, TSocket *> activeSocket;
     std::queue<TSocket *> socketQueue;
 };

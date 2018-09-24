@@ -97,10 +97,10 @@ TSocket *TConnection::getSocket()
 
 void TConnection::close()
 {
-    if(socket_)
-    {
-        socket_->close();
-    }
+    // if(socket_)
+    // {
+    //     socket_->close();
+    // }
 
     if(bev != NULL)
     {

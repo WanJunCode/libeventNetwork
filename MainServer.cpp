@@ -133,6 +133,8 @@ void MainServer::stdin_cb(evutil_socket_t stdin_fd, short what, void *args)
     {
         printf("connection vector size %lu \n", server->activeTConnection.size());
         printf("connection queue size %lu \n", server->connectionQueue.size());
+        printf("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
+        printf("transport socketqueue size = %d\n\n\n",server->transport_->getSocketQueue());
     }
     else
     {
