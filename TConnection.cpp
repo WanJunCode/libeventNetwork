@@ -3,21 +3,21 @@
 typedef unsigned char BYTE;
 
 TConnection::TConnection(TSocket *sock, MainServer *server)
-    : underlying_socket(sock),
-    server_(server)
+    : socket_(sock),
+    server_(server),
+    base_(server_->getBase())
 {
-    printf("TConnection structure ... socket [%d]\n", underlying_socket->getSocketFD());
-    
-    base_ = server_->getBase();
+    printf("TConnection structure ... socket [%d]\n", socket_->getSocketFD());
+
     init();
 }
 
 TConnection::~TConnection(){
     printf("析构函数 TConnection ... \n");
-    if(underlying_socket != NULL)
+    if(socket_ != NULL)
     {
-        delete underlying_socket;
-        underlying_socket =NULL;
+        delete socket_;
+        socket_ =NULL;
     }
 
     if(bev != NULL)
@@ -31,7 +31,7 @@ TConnection::~TConnection(){
 void TConnection::init()
 {
     printf("TConnection init ...\n");
-    bev = bufferevent_socket_new(base_, underlying_socket->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
+    bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
     if (bev)
     {
         bufferevent_setcb(bev, read_cb, NULL, error_cb, this);
@@ -48,12 +48,12 @@ void TConnection::setSocket(TSocket *socket)
     if(socket)
     {
         printf("TConnection 重新设置 socket \n");
-        underlying_socket = socket;
+        socket_ = socket;
         init();
     }
     else
     {
-        underlying_socket = NULL;
+        socket_ = NULL;
         printf("TConnection 设置 socket 为空 \n");
     }
 }
@@ -75,9 +75,9 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
     printf("evbuffer_peek = [%d]\n", ret);
     if (ret)
     {
-        BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+        // BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         std::string msg;
-        msg.append((char *)tmp_ptr, image.iov_len);
+        msg.append((char *)image.iov_base, image.iov_len);
         printf("socket: [%d] from evbuffer %s \n", bufferevent_getfd(bev), msg.c_str());
     }
 
@@ -92,14 +92,14 @@ MainServer *TConnection::getServer()
 
 TSocket *TConnection::getSocket()
 {
-    return underlying_socket;
+    return socket_;
 }
 
 void TConnection::close()
 {
-    if(underlying_socket)
+    if(socket_)
     {
-        underlying_socket->close();
+        socket_->close();
     }
 
     if(bev != NULL)

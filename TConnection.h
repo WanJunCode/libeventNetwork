@@ -22,7 +22,7 @@ class TConnection
     TSocket *getSocket();
 
   private:
-    TSocket *underlying_socket;
+    TSocket *socket_;
     MainServer *server_;
     struct event_base *base_;
     struct bufferevent *bev;

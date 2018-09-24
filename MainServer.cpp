@@ -17,9 +17,7 @@ MainServer::MainServer(int port)
 
 MainServer::~MainServer()
 {
-    event_base_free(main_base);
     printf("main server destructure ...\n");
-
     if (transport_ != NULL)
     {
         delete transport_;
@@ -39,23 +37,24 @@ MainServer::~MainServer()
         connectionQueue.pop();
         delete conn;
     }
+    event_base_free(main_base);
 }
 
 void MainServer::serve()
 {
     printf("serve() ... start \n");
 
+    // 添加一个 控制台输入事件
     ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdin_cb, this);
     event_add(ev_stdin, NULL);
 
     transport_->listen(12345);
 
     event_base_dispatch(main_base);
-
     printf("serve() ... end \n");
 }
 
-// server 处理 来自transport的 client_conn
+// server 处理 来自 transport 的 client_conn
 void MainServer::handlerConn(void *args)
 {
     printf("main server handler client_conn \n");
@@ -68,29 +67,36 @@ void MainServer::handlerConn(void *args)
     TConnection *conn;
     {
         std::lock_guard<std::mutex> locker(connMutex);
-        if(connectionQueue.empty()){
+        if (connectionQueue.empty())
+        {
             conn = new TConnection(sock, this);
             printf("新建一个 TConnection \n");
-        }else{
-            conn= connectionQueue.front();
+        }
+        else
+        {
+            conn = connectionQueue.front();
             connectionQueue.pop();
             conn->setSocket(sock);
             printf("复用一个 TConnection \n");
         }
-    }
 
-
-    if (conn)
-    {
-        conn->transition();
-        activeTConnection.push_back(conn);
+        if (conn)
+        {
+            conn->transition();
+            activeTConnection.push_back(conn);
+        }
+        else
+        {
+            printf("socket --> TConnection 失败 ...\n");
+        }
     }
 }
 
 void MainServer::returnTConnection(TConnection *conn)
 {
+    std::lock_guard<std::mutex> locker(connMutex);
     // 上锁
-    printf("main server 回收 TConnection ...\n");
+    printf("main server 回收 TConnection start ...\n");
 
     // 获得 TConnection 包装的 socket
     TSocket *sock = conn->getSocket();
@@ -104,7 +110,7 @@ void MainServer::returnTConnection(TConnection *conn)
     // connectionQueue 中 conn 都带有一个关闭的 TSocket
     conn->setSocket(NULL);
     connectionQueue.push(conn);
-    printf("main server 回收 end\n");
+    printf("main server 回收 TConnection end ...\n");
 }
 
 struct event_base *MainServer::getBase()
@@ -115,10 +121,10 @@ struct event_base *MainServer::getBase()
 void MainServer::stdin_cb(evutil_socket_t stdin_fd, short what, void *args)
 {
     MainServer *server = (MainServer *)args;
-    char recvline[2048];
+    char recvline[80];
     int len = read(stdin_fd, recvline, sizeof(recvline));
     recvline[len - 1] = '\0';
-    printf("\nyou have input message : [%s] \n", recvline);
+    printf("\nyou have input cmd : [%s] \n", recvline);
     if (strstr(recvline, "over") != NULL)
     {
         event_base_loopbreak(server->getBase());
@@ -127,7 +133,9 @@ void MainServer::stdin_cb(evutil_socket_t stdin_fd, short what, void *args)
     {
         printf("connection vector size %lu \n", server->activeTConnection.size());
         printf("connection queue size %lu \n", server->connectionQueue.size());
-
     }
-
+    else
+    {
+        printf("cmd error...\n");
+    }
 }

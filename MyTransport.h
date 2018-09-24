@@ -29,9 +29,9 @@ class MyTransport
     MainServer *server_;
     struct evconnlistener *listener_;
     struct event_base *main_base_;
-    std::map<evutil_socket_t, TSocket *> activeSocket;
     std::mutex connMutex_;
-
+    
+    std::map<evutil_socket_t, TSocket *> activeSocket;
     std::queue<TSocket *> socketQueue;
 };
 

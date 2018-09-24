@@ -12,13 +12,13 @@
 MyTransport::MyTransport(MainServer *server)
     : server_(server)
 {
-    printf("my transport structure ...\n");
+    printf("transport structure ...\n");
     main_base_ = server->getBase();
 }
 
 MyTransport::~MyTransport()
 {
-    printf("my transport destructure ...\n");
+    printf("transport destructure ...\n");
 
     if (listener_ != NULL)
     {
@@ -26,10 +26,9 @@ MyTransport::~MyTransport()
         listener_ = NULL;
     }
 
-    printf("my transport size = %lu\n", socketQueue.size());
+    printf("transport size = [%lu]\n", socketQueue.size());
     while (!socketQueue.empty())
     {
-        printf("transport socket queue pop...\n");
         TSocket *tmp = socketQueue.front();
         socketQueue.pop();
         delete tmp;
@@ -38,18 +37,17 @@ MyTransport::~MyTransport()
 
 void MyTransport::listen(int port)
 {
-
     struct sockaddr_in server_addr;
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
 
-    printf("新建 listener ...\n");
+    printf("new listener ...\n");
     listener_ = evconnlistener_new_bind(main_base_, do_accept, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, 10, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
     if (!listener_)
     {
-        perror("listener 新建 失败 ...\n");
+        perror("create listener error...\n");
         assert(0);
     }
 
@@ -60,6 +58,7 @@ void MyTransport::listen(int port)
 
 TSocket *MyTransport::accept()
 {
+    std::lock_guard<std::mutex> locker(connMutex_);
     TSocket *sock = socketQueue.front();
     socketQueue.pop();
     return sock;
@@ -68,11 +67,9 @@ TSocket *MyTransport::accept()
 void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t client_fd,
                             struct sockaddr *addr, int socklen, void *args)
 {
-    printf("新的 client 连接 %d...\n", client_fd);
+    printf("new client connection [%d]...\n", client_fd);
     MyTransport *transport = (MyTransport *)args;
-
     {
-        // 上锁
         std::lock_guard<std::mutex>(transport->connMutex_);
         auto iter = transport->activeSocket.find(client_fd);
         if (iter != transport->activeSocket.end())
@@ -100,12 +97,12 @@ void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t cli
 
 void MyTransport::returnTSocket(TSocket *sock)
 {
-    printf("回收 TSocket \n");
-    // 上锁
+    printf("transport return TSocket \n");
+    std::lock_guard<std::mutex> locker(connMutex_);
     auto iter = activeSocket.find(sock->getSocketFD());
     if (iter != activeSocket.end())
     {
-        printf("active socket map erase sock \n");
+        printf("active socket map erase sock [%lu]\n",*iter);
         activeSocket.erase(iter);
     }
     // 关闭回收的TSocket连接
