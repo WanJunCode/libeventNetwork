@@ -1,11 +1,13 @@
-#include <stdio.h>
-#include <string.h>
 #include "MainServer.h"
+#include "MainConfig.h"
 
 int main(int argc, char const *argv[])
 {
-    printf("服务器          // wanjun //   开启 ...\n");
-    MainServer server(12345);
+    MainConfig config(CONFIG_PATH);
+    
+    LOG_DEBUG("***********************wanjun server start***********************\n");
+    MainServer server;
     server.serve();
+    LOG_DEBUG("************************wanjun server end************************\n");
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "TConnection.h"
 
+#include "log.h"
+
 typedef unsigned char BYTE;
 
 TConnection::TConnection(TSocket *sock, MainServer *server)
@@ -7,13 +9,30 @@ TConnection::TConnection(TSocket *sock, MainServer *server)
     server_(server),
     base_(server_->getBase())
 {
-    printf("TConnection structure ... socket [%d]\n", socket_->getSocketFD());
+    LOG_DEBUG("TConnection structure ... socket [%d]\n", socket_->getSocketFD());
 
     init();
 }
 
-TConnection::~TConnection(){
-    printf("析构函数 TConnection ... \n");
+TConnection::TConnection(TSocket *sock, IOThread *iothread)
+    : socket_(sock),
+    iothread_(iothread),
+    base_(iothread_->getBase())
+{
+    server_ =NULL;
+    server_ = iothread_->getServer();
+    if(server_==NULL){
+        LOG_DEBUG("iothread get server but is null\n");
+    }
+
+    LOG_DEBUG("TConnection structure iothread ... socket [%d]\n", socket_->getSocketFD());
+
+    init();
+}
+
+TConnection::~TConnection()
+{
+    LOG_DEBUG("析构函数 TConnection ... \n");
     if(socket_ != NULL)
     {
         delete socket_;
@@ -30,61 +49,36 @@ TConnection::~TConnection(){
 // 初始化设置，重新设置 TSocket
 void TConnection::init()
 {
-    printf("TConnection init ...\n");
+    LOG_DEBUG("TConnection init bufferevent...\n");
     bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
-    if (bev)
-    {
+    if (bev) {
         bufferevent_setcb(bev, read_cb, NULL, error_cb, this);
+        // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
-    }
-    else
-    {
-        printf("TConnection create bufferevent fail ...\n");
+    } else {
+        LOG_DEBUG("TConnection create bufferevent fail ...\n");
     }
 }
 
 void TConnection::setSocket(TSocket *socket)
 {
-    if(socket)
-    {
-        printf("TConnection 重新设置 socket \n");
+    if(socket) {
+        LOG_DEBUG("TConnection 重新设置 socket \n");
         socket_ = socket;
         init();
-    }
-    else
-    {
+    } else {
         socket_ = NULL;
-        printf("TConnection 设置 socket 为空 \n");
+        LOG_DEBUG("TConnection 设置 socket 为空 \n");
     }
 }
 
-
+// 开启 client 在 base 上的 bufferevent
 void TConnection::transition()
 {
-    printf("TConnection transport ...\n");
+    LOG_DEBUG("TConnection transport ...\n");
     bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
 }
 
-void TConnection::read_cb(struct bufferevent *bev, void *args)
-{
-    struct evbuffer *input = bufferevent_get_input(bev);
-    printf("\n\nbefore read input length = %lu\n", evbuffer_get_length(input));
-    struct evbuffer_iovec image;
-
-    int ret = evbuffer_peek(input, -1, NULL, &image, 1);
-    printf("evbuffer_peek = [%d]\n", ret);
-    if (ret)
-    {
-        // BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
-        std::string msg;
-        msg.append((char *)image.iov_base, image.iov_len);
-        printf("socket: [%d] from evbuffer %s \n", bufferevent_getfd(bev), msg.c_str());
-    }
-
-    evbuffer_drain(input, image.iov_len);
-    printf("after read input length = %lu\n", evbuffer_get_length(input));
-}
-    
 MainServer *TConnection::getServer()
 {
     return server_;
@@ -104,21 +98,61 @@ void TConnection::close()
 
     if(bev != NULL)
     {
+        // 释放 TSocket 上建立的 bufferevent
         bufferevent_free(bev);
+        bev=NULL;
     }
-    bev=NULL;
 
-    server_->returnTConnection(this);
+    // 还是需要 MainServer 去处理 TConnection
+    if(server_!=NULL)
+    {
+        LOG_DEBUG("TConnection close return tconnection\n");
+        server_->returnTConnection(this);
+    }
+    else
+    {
+        LOG_DEBUG("============================================\n");
+        LOG_DEBUG("TConnection close but server is null!!!\n");
+    }
 }
 
+bool TConnection::notify(){
+    if(iothread_){
+        return iothread_->notify(this);
+    }
+    return false;
+}
+
+// static
 void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 {
     TConnection *conn = (TConnection *)args;
 
     if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF))
     {
-        printf("client bufferevent eof...\n");
+        LOG_DEBUG("client bufferevent eof...\n");
     }
 
+    // client 断开连接
     conn->close();
+}
+
+// static
+void TConnection::read_cb(struct bufferevent *bev, void *args)
+{
+    struct evbuffer *input = bufferevent_get_input(bev);
+    LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
+    struct evbuffer_iovec image;
+
+    int ret = evbuffer_peek(input, -1, NULL, &image, 1);
+    LOG_DEBUG("evbuffer_peek return block size= [%d]\n", ret);
+    if (ret)
+    {
+        // BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+        std::string msg((char *)image.iov_base, image.iov_len);
+        LOG_DEBUG("socket: [%d] from evbuffer %s \n",bufferevent_getfd(bev), msg.c_str());
+    }
+
+    evbuffer_drain(input, image.iov_len);
+    LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
 }

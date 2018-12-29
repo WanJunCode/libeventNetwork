@@ -1,0 +1,8 @@
+1546074192 ALERT mywarn : Alert info
+1546074192 WARN mywarn : This will be a logged warning
+1546074192 CRIT mywarn : Importance depends on context
+1546074192 CRIT mywarn : This will show up << as 1 critical message300
+1546080008 ALERT mywarn : Alert info
+1546080008 WARN mywarn : This will be a logged warning
+1546080008 CRIT mywarn : Importance depends on context
+1546080008 CRIT mywarn : This will show up << as 1 critical message300

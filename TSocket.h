@@ -1,9 +1,13 @@
 #ifndef __CF_TSOCKET_H
 #define __CF_TSOCKET_H
 
+
 #include <arpa/inet.h>
 #include <string>
 #include <event2/util.h>
+
+#define INVALID_SOCKET -1
+
 
 // 对 evutil_socket_t 的封装，资源管理容器  析构函数中自动释放 socket 资源
 class TSocket

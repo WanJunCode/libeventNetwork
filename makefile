@@ -1,5 +1,5 @@
 all:
-	g++ *.cpp -o wanjun_server -levent
+	g++ *.cpp -g -o server -levent -pthread -ljsoncpp -std=c++11
 .PNONY:clean
 clean:
-	rm -f wanjun_server
+	rm -f server core

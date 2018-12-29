@@ -12,8 +12,10 @@
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <net/if.h>
-
 #include <string.h>
+#include <type_traits>
+
+#include "log.h"
 
 template <class DesType, class SrcType>
 DesType convert(const SrcType &t)
@@ -27,13 +29,12 @@ DesType convert(const SrcType &t)
 
 #ifndef SOCKOPT_CAST_T
 #ifndef _WIN32
-#define SOCKOPT_CAST_T void
+#define SOCKOPT_CAST_T void     // linux
 #else
-#define SOCKOPT_CAST_T char
+#define SOCKOPT_CAST_T char     // win32
 #endif // _WIN32
 #endif
 
-#define INVALID_SOCKET -1
 
 // 转换成 const sockopt
 // 将 T 类型转化为 const SOCKOPT_CAST_T 类型
@@ -85,7 +86,7 @@ TSocket::TSocket(const std::string &host, int port)
 TSocket::~TSocket()
 {
     close();
-    printf("TSocket 析构函数 \n");
+    LOG_DEBUG("TSocket 析构函数\n");
 }
 
 std::string getpeermac(int sockfd)
@@ -114,7 +115,7 @@ std::string getpeermac(int sockfd)
             if (getpeername(sockfd, (struct sockaddr *)&dstadd_in, &len) < 0)
             {
                 // 执行失败
-                printf("getpeername()");
+                LOG_DEBUG("getpeername()");
             }
             else
             {
@@ -128,7 +129,7 @@ std::string getpeermac(int sockfd)
                 if (::ioctl(sockfd, SIOCGARP, &arpreq) < 0)
                 {
                     // 执行失败
-                    printf("ioctl() SIOCGARP");
+                    LOG_DEBUG("ioctl() SIOCGARP");
                 }
                 else
                 {
