@@ -126,6 +126,7 @@ bool TConnection::notify(){
 // static
 void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 {
+    // client disconnection
     TConnection *conn = (TConnection *)args;
 
     if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF))

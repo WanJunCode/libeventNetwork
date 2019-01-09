@@ -65,22 +65,26 @@ void IOThread::start()
     threadId_ = pthread_self();
 
     if(base_ == NULL){
+        // 在新的线程上创建一个 eventbase
         base_ = event_base_new();
     }
     // 创建 notification 管道
     createNotificationPipe();
 
+    // 为接受管道设置一个 读取事件 notificationEvent_
     event_set(&notificationEvent_,
           getNotificationRecvFD(),
           EV_READ | EV_PERSIST,
           IOThread::notifyHandler,
           this);
 
-              // Attach to the base
+    // Attach to the base
     event_base_set(base_, &notificationEvent_);
 
     // Add the event and start up the server
-    if (-1 == event_add(&notificationEvent_, 0)) {
+    // if (-1 == event_add(&notificationEvent_, 0)) {
+    if (-1 == event_add(&notificationEvent_, NULL)) {
+        // time is NULL means wait forever
         LOG_DEBUG("TNonblockingServer::serve(): event_add() failed on task-done notification event");
     }
 }
