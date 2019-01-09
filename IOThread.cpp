@@ -89,6 +89,7 @@ void IOThread::start()
     }
 }
 
+// 重载了操作符号 operator() 用于 线程的执行
 void IOThread::operator()()
 {
     LOG_DEBUG("start iothread event base loop\n");

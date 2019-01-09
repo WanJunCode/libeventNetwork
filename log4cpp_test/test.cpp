@@ -1,7 +1,27 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/FileAppender.hh>
 #include <log4cpp/BasicLayout.hh>
+#include <log4cpp/OstreamAppender.hh>
 
+#include <iostream>
+
+// Layout -> OstreamAppender -> Category
+void test()
+{
+    log4cpp::OstreamAppender* osAppender =new log4cpp::OstreamAppender("osAppender",&std::cout);
+    osAppender->setLayout(new log4cpp::BasicLayout());
+    log4cpp::Category& root =log4cpp::Category::getRoot();
+    root.addAppender(osAppender);
+    root.setPriority(log4cpp::Priority::DEBUG);
+    
+    root.error("Hello log4cpp in aError Message!");
+    root.warn("Hello log4cpp in aWarning Message!");
+    
+    log4cpp::Category::shutdown();
+}
+
+
+// Layout -> Appender -> Category
 int main()
 {
     log4cpp::Layout* layout =  new log4cpp::BasicLayout();
@@ -29,10 +49,12 @@ int main()
         priority = log4cpp::Priority::CRIT;
     else
        priority = log4cpp::Priority::DEBUG;
-  warn_log.log(priority,"Importance depends on context");
+    warn_log.log(priority,"Importance depends on context");
         
-  warn_log.critStream() << "This will show up << as " << 1 << " critical message"<< log4cpp::Priority::ERROR;
-  // clean up and flush all appenders
-  log4cpp::Category::shutdown();
-  return 0;
+
+    warn_log.critStream() << "This will show up << as " << 1 << " critical message"<< log4cpp::Priority::ERROR;
+  
+    // clean up and flush all appenders
+    log4cpp::Category::shutdown();
+    return 0;
 }

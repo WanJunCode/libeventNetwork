@@ -21,11 +21,11 @@ MainServer::MainServer()
     pools = new ThreadPool(POOL_SIZE);
 
     for(int i=0;i<IOTHREAD_SIZE;i++){
-        // 使用智能指针
+        // 使用智能指针，在析构函数中不再需要手动析构
         iothreads_.push_back(std::make_shared<IOThread>(this));
     }
     
-    // 开启 iothread
+    // 开启 iothread loop
     for(int i=0;i<IOTHREAD_SIZE;i++){
         pools->enqueue(std::ref(*iothreads_[i]));
     }
@@ -47,6 +47,7 @@ MainServer::~MainServer()
     if(pools != NULL)
     {
         delete pools;
+        pools = NULL;
     }
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
@@ -63,6 +64,7 @@ MainServer::~MainServer()
         delete conn;
     }
 
+    // 释放 mainserver 的 eventbase
     event_base_free(main_base);
 }
 
