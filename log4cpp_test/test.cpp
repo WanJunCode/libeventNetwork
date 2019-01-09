@@ -3,13 +3,15 @@
 #include <log4cpp/BasicLayout.hh>
 #include <log4cpp/PatternLayout.hh>
 #include <log4cpp/OstreamAppender.hh>
+#include <log4cpp/StringQueueAppender.hh>
+#include <log4cpp/RollingFileAppender.hh>
 
 #include <iostream>
 
-// Layout -> OstreamAppender -> Category
-//           Appender
 void test()
 {
+    // Layout -> OstreamAppender -> Category
+    //           Appender
     log4cpp::OstreamAppender* osAppender =new log4cpp::OstreamAppender("osAppender",&std::cout);
     osAppender->setLayout(new log4cpp::PatternLayout());
     log4cpp::Category& root =log4cpp::Category::getRoot();
@@ -24,10 +26,11 @@ void test()
 
 void test1()
 {
+    // PatternLayout --> OstreamAppender --> Category
     log4cpp::OstreamAppender* osAppender = new log4cpp::OstreamAppender("osAppender",&std::cout);
     log4cpp::PatternLayout* pLayout = new log4cpp::PatternLayout();
     pLayout->setConversionPattern("%d: %p %c %x: %m%n");
-    
+
 // %c category
 // %d 日期；日期可以进一步的设置格式，用花括号包围，例如%d{%H:%M:%S,%l} 或者 %d{%d %m %Y%H:%M:%S,%l}。如果不设置具体日期格式，则如下默认格式被使用“Wed Jan 02 02:03:55 1980”。日期的格式符号与ANSI C函数strftime中的一致。但增加了一个格式符号%l，表示毫秒，占三个十进制位
 // %m 消息
@@ -89,9 +92,66 @@ void test2()
     log4cpp::Category::shutdown();
 }
 
+void test3()
+{
+    // BasicLayout --> StringQueueAppender --> Category
+    using namespace std;
+
+    log4cpp::StringQueueAppender* strQAppender = new log4cpp::StringQueueAppender("strQAppender");
+    strQAppender->setLayout(new log4cpp::BasicLayout());    
+    log4cpp::Category& root =log4cpp::Category::getRoot();
+    root.addAppender(strQAppender);
+    root.setPriority(log4cpp::Priority::DEBUG);
+
+    root.error("Hello log4cpp in a Error Message!");
+    root.warn("Hello log4cpp in a WarningMessage!");
+    
+    cout<<"Get message from MemoryQueue!"<<endl;
+    cout<<"-------------------------------------------"<<endl;
+    // 获得内存中的 string queue
+    queue<string>& myStrQ =strQAppender->getQueue();
+    while(!myStrQ.empty())
+    {
+        cout<<myStrQ.front();
+        myStrQ.pop();
+    }
+
+    log4cpp::Category::shutdown();
+}
+
+void test4()
+{
+    // PatternLayout -->  Appender            -->  Category
+    //                    RollingFileAppender
+
+    using namespace std;
+    log4cpp::PatternLayout* pLayout1 = new log4cpp::PatternLayout();
+    pLayout1->setConversionPattern("%d: %p %c%x: %m%n");
+    log4cpp::PatternLayout* pLayout2 = new log4cpp::PatternLayout();
+    pLayout2->setConversionPattern("%d: %p %c%x: %m%n");
+
+    log4cpp::Appender* fileAppender = new log4cpp::FileAppender("fileAppender","wxb.log");
+    fileAppender->setLayout(pLayout1);
+    log4cpp::RollingFileAppender* rollfileAppender = new log4cpp::RollingFileAppender("rollfileAppender","rollwxb.log",5*1024,3);
+    rollfileAppender->setLayout(pLayout2);
+    log4cpp::Category& root =log4cpp::Category::getRoot().getInstance("RootName");
+    root.addAppender(fileAppender);
+    root.addAppender(rollfileAppender);
+    root.setPriority(log4cpp::Priority::DEBUG);
+    
+    for (int i = 0; i < 100; i++)
+    {
+        string strError;
+        ostringstream oss;
+        oss<<i<<":RootError Message!";
+        strError = oss.str();
+        root.error(strError);
+    }
+    log4cpp::Category::shutdown();
+}
 // Layout -> Appender -> Category
 int main()
 {
-    test1();
+    test4();
     return 0;
 }
