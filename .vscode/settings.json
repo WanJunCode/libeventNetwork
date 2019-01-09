@@ -42,6 +42,11 @@
         "typeinfo": "cpp",
         "utility": "cpp",
         "iomanip": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "atomic": "cpp",
+        "strstream": "cpp",
+        "cstring": "cpp",
+        "functional": "cpp",
+        "future": "cpp"
     }
 }

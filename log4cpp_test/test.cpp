@@ -5,6 +5,9 @@
 #include <log4cpp/OstreamAppender.hh>
 #include <log4cpp/StringQueueAppender.hh>
 #include <log4cpp/RollingFileAppender.hh>
+#include <log4cpp/NDC.hh>
+#include <log4cpp/PropertyConfigurator.hh>
+#include <log4cpp/CategoryStream.hh>
 
 #include <iostream>
 
@@ -149,9 +152,81 @@ void test4()
     }
     log4cpp::Category::shutdown();
 }
+
+void test5()
+{
+    using namespace std;
+    log4cpp::OstreamAppender*osAppender1 = new log4cpp::OstreamAppender("osAppender1",&cout);
+    osAppender1->setLayout(new log4cpp::BasicLayout());
+    log4cpp::OstreamAppender* osAppender2 = new log4cpp::OstreamAppender("osAppender2",&cout);
+    osAppender2->setLayout(new log4cpp::BasicLayout());
+
+    log4cpp::Category& root =log4cpp::Category::getRoot();
+    root.setPriority(log4cpp::Priority::DEBUG);
+    
+    log4cpp::Category& sub1 =root.getInstance("sub1");
+    sub1.addAppender(osAppender1);
+    sub1.setPriority(log4cpp::Priority::DEBUG);
+    sub1.error("suberror");
+    
+    log4cpp::Category& sub2 =root.getInstance("sub2");
+    sub2.addAppender(osAppender2);
+    sub2.setPriority(101);
+    sub2.warn("sub2warning");
+    sub2.fatal("sub2fatal");
+    sub2.alert("sub2alert");
+    sub2.crit("sub2crit");
+    
+    log4cpp::Category::shutdown();
+}
+
+void test6()
+{
+    using namespace log4cpp;
+
+    std::cout<< "1.empty NDC: " <<NDC::get()<< std::endl;
+    NDC::push("context1");  
+    std::cout<< "2.push context1: " <<NDC::get()<< std::endl;
+    NDC::push("context2");
+    std::cout<< "3.push context2: " <<NDC::get()<< std::endl;
+    NDC::push("context3");
+    std::cout<< "4.push context3: " <<NDC::get()<< std::endl;
+
+    std::cout<< "5.get depth: " <<NDC::getDepth() <<std::endl;
+    std::cout<< "6.pop: " << NDC::pop()<< std::endl;
+    std::cout<< "7.after pop:"<<NDC::get()<<std::endl;
+    NDC::clear();
+    std::cout<< "8.clear: " << NDC::get() <<std::endl;
+}
+
+int test7()
+{
+    try{
+        log4cpp::PropertyConfigurator::configure("./log4cpp.conf");
+    }
+    catch(log4cpp::ConfigureFailure& f)
+    {
+        std::cout<< "Configure Problem "<< f.what()<< std::endl;
+        return -1;
+    }
+
+    log4cpp::Category& root =log4cpp::Category::getRoot();
+    log4cpp::Category& sub1 =log4cpp::Category::getInstance(std::string("sub1"));
+    log4cpp::Category& sub3 =log4cpp::Category::getInstance(std::string("sub1.sub2"));
+    sub1.info("This is someinfo");
+    sub1.alert("Awarning");
+    // sub3 only have A2 appender.
+
+    sub3.debug("This debug messagewill fail to write");
+    sub3.alert("All hands abandonship");
+    sub3.critStream() <<"This will show up<< as "<< 1 <<" critical message";
+    sub3<<log4cpp::Priority::ERROR<<"And this will be anerror";
+    sub3.log(log4cpp::Priority::WARN, "This will be a logged warning");
+}
+
 // Layout -> Appender -> Category
 int main()
 {
-    test4();
+    test7();
     return 0;
 }
