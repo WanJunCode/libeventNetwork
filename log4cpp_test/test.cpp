@@ -230,7 +230,7 @@ int test7()
 }
 
 // Layout -> Appender -> Category
-int main()
+int log4cpp_main()
 {
     test7();
     return 0;
