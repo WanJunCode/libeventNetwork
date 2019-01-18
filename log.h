@@ -10,6 +10,11 @@
 #include <mutex>
 #include <pthread.h>
 #include "Tool.h"           // vform
+#include <log4cpp/Category.hh>
+#include <log4cpp/FileAppender.hh>
+#include <log4cpp/PatternLayout.hh>
+#include <log4cpp/PropertyConfigurator.hh>
+#include <log4cpp/CategoryStream.hh>
 
 #define LOG_FILE "log_file.out"
 
@@ -30,7 +35,6 @@ public:
     void printf_w_notime(const char *cmd, ...);
     void printf(unsigned long pthread_id,const std::string filename,int line,const std::string function,const char *cmd,...);
 
-
     // 单例模式
     static Log& getInstance();
     static Log root_log;
@@ -38,6 +42,7 @@ public:
 private:
     std::ofstream out;
     std::mutex mutex_;
+    log4cpp::Category& root;
 };
 
 template<typename T>

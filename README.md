@@ -33,3 +33,9 @@ TConnection  ==>  MainServer  ==>  MyTransport 回收 TSocket
                               ==>  TConnection  设置内部 socket 为 null
 
 // 客户端数据处理
+
+
+三. log4cpp 的使用
+g++ 编译添加 -llog4cpp
+参考链接
+https://www.ibm.com/developerworks/cn/linux/l-log4cpp/

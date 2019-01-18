@@ -11,6 +11,8 @@
 
 #include <iostream>
 
+#define CONFIG_PATH "../Config/Log4cpp.conf"
+
 void test()
 {
     // Layout -> OstreamAppender -> Category
@@ -97,6 +99,8 @@ void test2()
 
 void test3()
 {
+    // 字符串　适合节省资源
+
     // BasicLayout --> StringQueueAppender --> Category
     using namespace std;
 
@@ -201,8 +205,9 @@ void test6()
 
 int test7()
 {
+    // log 4 cpp 读取conf　配置文件
     try{
-        log4cpp::PropertyConfigurator::configure("./log4cpp.conf");
+        log4cpp::PropertyConfigurator::configure(CONFIG_PATH);
     }
     catch(log4cpp::ConfigureFailure& f)
     {
