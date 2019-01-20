@@ -77,7 +77,7 @@ TSocket::TSocket(evutil_socket_t sock)
 TSocket::TSocket(const std::string &host, int port)
     : socket_(INVALID_SOCKET)
 {
-
+    
     // 赋值本地 host port
     socket_info_.localHost_ = host;
     socket_info_.localPort_ = port;

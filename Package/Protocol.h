@@ -27,7 +27,6 @@ public:
         return handler_;
     }
 
-
 private:
     ProtocolEventHandler *handler_;
 };

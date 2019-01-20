@@ -2,6 +2,7 @@
 #define CHAT_PACKAGE
 
 #include "Package.h"
+#include <assert.h>
 
 class ChatPackage:public Package{
 public:
@@ -36,6 +37,22 @@ public:
 public:
     // 判断 payload 指针指向的内存区域是否是一个完整的数据包
     static bool isOnePackage(void *payload, size_t length,size_t& frame,size_t& want);
+public:
+    inline DATA_TYPE type() const{
+        assert(head_);
+        return (DATA_TYPE)head_->type;
+    }
+    inline CRYPT_TYPE crypt() const{
+        assert(head_);
+        return (CRYPT_TYPE)head_->crypt;
+    }
+    // string.c_str() 返回　const char * ，是不可以被修改的
+    inline void *data(){
+        return (void *)((char *)rawData.c_str() + sizeof(CHAT_HEADER_t));
+    }
+    inline size_t length() {
+        return data_length;
+    }
 
 private:
     CHAT_HEADER_t *head_;
