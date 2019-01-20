@@ -1,6 +1,6 @@
 #include "TCedisPool.h"
 
-int mai(){
+int example(){
 
     TCedisPool pool("127.0.0.1",6379,"",100,5);
 
