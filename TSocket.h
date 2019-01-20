@@ -12,13 +12,13 @@
 // 对 evutil_socket_t 的封装，资源管理容器  析构函数中自动释放 socket 资源
 class TSocket
 {
-  public:
+public:
     explicit TSocket();
     explicit TSocket(evutil_socket_t sock);
     explicit TSocket(const std::string &host, int port);
     virtual ~TSocket();
 
-  public:
+public:
     /**
      * Whether the socket is alive.
      */
@@ -157,13 +157,13 @@ class TSocket
      */
     static bool getUseLowMinRto();
 
-  private:
+private:
     /**
     * Parse the base info from the host to which the socket is connected
     */
     void parseSocket();
 
-  protected:
+protected:
     // socket 信息
     typedef struct _tag_socket_info_t
     {
