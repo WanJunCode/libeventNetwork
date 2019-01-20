@@ -28,10 +28,10 @@ public:
         return (0==rawDataLength);
     }
 
-private:
+protected:
     std::string rawData;
     std::string factoryCode;
-    size_t rawDataLength;
+    size_t      rawDataLength;
 };
 
 #endif //  WANJUN_PACKAGE
