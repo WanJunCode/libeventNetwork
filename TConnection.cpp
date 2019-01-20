@@ -1,6 +1,7 @@
 #include "TConnection.h"
-
 #include "log.h"
+
+#include <string.h>
 
 typedef unsigned char BYTE;
 
@@ -19,9 +20,8 @@ TConnection::TConnection(TSocket *sock, IOThread *iothread)
     iothread_(iothread),
     base_(iothread_->getBase())
 {
-    server_ =NULL;
     server_ = iothread_->getServer();
-    if(server_==NULL){
+    if(server_ == NULL){
         LOG_DEBUG("iothread get server but is null\n");
     }
 
@@ -30,8 +30,8 @@ TConnection::TConnection(TSocket *sock, IOThread *iothread)
     init();
 }
 
-TConnection::~TConnection()
-{
+TConnection::~TConnection(){
+
     LOG_DEBUG("析构函数 TConnection ... \n");
     if(socket_ != NULL)
     {
@@ -47,12 +47,35 @@ TConnection::~TConnection()
 }
 
 // 初始化设置，重新设置 TSocket
-void TConnection::init()
-{
+void TConnection::init(){
+
     LOG_DEBUG("TConnection init bufferevent...\n");
+    int maxBufferSize_ = server_->getBufferSize();
     bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
     if (bev) {
-        bufferevent_setcb(bev, read_cb, NULL, error_cb, this);
+        if(socket_->getSocketFD() == INVALID_SOCKET){
+            // FD 无效
+            struct sockaddr_in addr;
+            memset(&addr,0,sizeof(addr));
+            addr.sin_family = AF_INET;
+            addr.sin_addr.s_addr = inet_addr(socket_->getLocalHost().c_str());
+            addr.sin_port = htons(socket_->getLocalPort());
+            bzero(&(addr.sin_zero),8);
+            
+            if( -1 == bufferevent_socket_connect(bev,(sockaddr*)&addr,sizeof(addr)) ){
+                LOG_DEBUG("TConnection fd [%d] bufferevent_socket_connect fail!\n",socket_->getSocketFD());
+                close();
+            }else{
+                LOG_DEBUG("TConnection fd [%d] init success!\n",socket_->getSocketFD());
+            }
+        }
+
+        bufferevent_setcb(  bev, 
+                            TConnection::read_cb, 
+                            NULL, 
+                            TConnection::error_cb, 
+                            this);
+        bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
         // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
     } else {
@@ -109,11 +132,6 @@ void TConnection::close()
         LOG_DEBUG("TConnection close return tconnection\n");
         server_->returnTConnection(this);
     }
-    else
-    {
-        LOG_DEBUG("============================================\n");
-        LOG_DEBUG("TConnection close but server is null!!!\n");
-    }
 }
 
 bool TConnection::notify(){
@@ -144,16 +162,17 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
     struct evbuffer *input = bufferevent_get_input(bev);
     LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
     struct evbuffer_iovec image;
-
     int ret = evbuffer_peek(input, -1, NULL, &image, 1);
     LOG_DEBUG("evbuffer_peek return block size= [%d]\n", ret);
     if (ret)
     {
-        // BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+        // void * =>  unsigned char *
+        BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         std::string msg((char *)image.iov_base, image.iov_len);
         LOG_DEBUG("socket: [%d] from evbuffer %s \n",bufferevent_getfd(bev), msg.c_str());
     }
 
+    // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
     evbuffer_drain(input, image.iov_len);
     LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
 }

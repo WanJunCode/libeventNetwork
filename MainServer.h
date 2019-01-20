@@ -20,6 +20,7 @@
 class TSocket;
 class MyTransport;
 class TConnection;
+
 class MainServer
 {
 public:
@@ -36,13 +37,16 @@ public:
   ThreadPool *getPool();
 
   bool isActive(TConnection *conn);
+  inline int getBufferSize() const{
+    return maxBufferSize;
+  }
 
 private:
   struct event_base *main_base;
   struct event *ev_stdin;     // 处理命令行输入
   
   int port_;
-
+  int maxBufferSize;
   ThreadPool *pools;
 
   // 使用共享智能指针

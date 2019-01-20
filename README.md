@@ -39,3 +39,48 @@ TConnection  ==>  MainServer  ==>  MyTransport 回收 TSocket
 g++ 编译添加 -llog4cpp
 参考链接
 https://www.ibm.com/developerworks/cn/linux/l-log4cpp/
+
+
+四. 着手协议的定制
+目标: 实现一个聊天室的功能
+
+数据库设计
+
+table user{
+    id
+    passwd
+    name
+    sex
+    age
+    address
+    email
+}
+
+table group{
+    id
+    
+}
+
+
+每个　客户端client　可以　单人聊天　和　群聊
+
+package 解析
+
+head:
+    headflag
+    data length
+    cmd         // 发送数据　　enum 
+    u2u         // user to user
+    u2g         // user to group
+// json 格式
+data:
+    sendid
+        [userid]            // 表明自己身份
+    receiveid
+        [userid]            // 目标 userid
+        [groupid]           // 目标 group id
+    text
+        不定长
+tail:
+    crc32 校验
+    tailflag

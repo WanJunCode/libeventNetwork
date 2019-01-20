@@ -9,11 +9,13 @@
 #include <chrono>
 #include "IOThread.h"
 
+#define MAXBUFFERSIZE 1024
 typedef unsigned char BYTE;
 
 MainServer::MainServer()
     :   port_(PORT),
-        selectIOThread(0)
+        selectIOThread(0),
+        maxBufferSize(MAXBUFFERSIZE)            // 定义　bufferevent　最大的水位
 {
     LOG_DEBUG("main server structure ...\n");
     main_base = event_base_new();
