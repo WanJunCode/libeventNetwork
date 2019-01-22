@@ -38,7 +38,7 @@ ChatPackage::ChatPackage(CRYPT_TYPE crypt, DATA_TYPE type, void *payload, size_t
     CHAT_TAIL_t tail;
 
     // CRC 冗余校验
-    tail.crc = htons(crc16((unsigned char *)rawData.c_str(), sizeof(CHAT_HEADER_t) + data_length));
+    tail.crc = crc16((unsigned char *)rawData.c_str(), sizeof(CHAT_HEADER_t) + data_length);
     tail.tail = 0x7B;
     // 添加　tail
     rawData.append( (char *)&tail, sizeof(CHAT_TAIL_t) );

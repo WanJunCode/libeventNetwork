@@ -2,6 +2,7 @@
 #include "log.h"
 
 #include <string.h>
+#include "Package/ChatPackage.h"
 
 typedef unsigned char BYTE;
 
@@ -173,6 +174,7 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
         LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 
         // 在此处将接受的到数据打包成一个　package
+        ChatPackage pkg(image.iov_base,image.iov_len);
     }
 
     // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
