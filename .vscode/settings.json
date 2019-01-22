@@ -47,6 +47,7 @@
         "strstream": "cpp",
         "cstring": "cpp",
         "functional": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "list": "cpp"
     }
 }
