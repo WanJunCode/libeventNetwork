@@ -25,8 +25,6 @@ Log::Log():
     // Category 需要设置 priority 优先级
     root.setPriority(log4cpp::Priority::INFO);
 
-    root.info("test root debug");
-
     out.open(LOG_FILE,std::ios::app);
 }
 
