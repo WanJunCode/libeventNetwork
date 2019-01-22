@@ -60,4 +60,17 @@ private:
     uint16_t data_length;
 };
 
+class ChatProtocol:public Protocol{
+public:
+    explicit ChatProtocol(ProtocolEventHandler *headler=nullptr):
+        Protocol(headler){
+    }
+    virtual ~ChatProtocol(){
+    }
+
+public:
+    virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant);
+    virtual Package *getOnePackage(BYTE * package, size_t dataSize);
+};
+
 #endif // !CHAT_PACKAGE

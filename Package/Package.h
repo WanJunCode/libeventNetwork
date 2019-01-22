@@ -62,15 +62,17 @@ public:
         return handler_;
     }
 
-    virtual void addProtocol(Protocol *) {}
-
     virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant) = 0;
 
     virtual Package *getOnePackage(BYTE * package, size_t dataSize) = 0;
 
+    // 虚函数有自己的实现，子类可以不覆盖该函数
+    virtual void addProtocol(Protocol *) {
+    }
+
     virtual BYTE *serialize(Package *package) {
         return (BYTE *)package->getRawData();
-    };
+    }
     //反序列化数据
     virtual Package * deserialize(Package *package) {
         return package;
