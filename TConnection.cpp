@@ -170,6 +170,7 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         std::string msg((char *)image.iov_base, image.iov_len);
         LOG_DEBUG("socket: [%d] from evbuffer %s \n",bufferevent_getfd(bev), msg.c_str());
+        LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
     }
 
     // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据

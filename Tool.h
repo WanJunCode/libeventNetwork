@@ -11,4 +11,8 @@ const char* StripFileName(const char *full_name);
 
 char *textFileRead(const char* filename);
 
+//字节流转换为十六进制字符串的另一种实现方式
+int byte2hex(const void *sSrc, int nSrcLen, char *sDest, int destLen);
+std::string byteTohex(const void *sSrc, int nSrcLen);
+
 #endif // !WANJUN_TOOL_H
