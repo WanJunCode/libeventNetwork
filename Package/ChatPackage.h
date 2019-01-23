@@ -3,6 +3,7 @@
 
 #include "Package.h"
 #include <assert.h>
+#include "../log.h"
 
 class ChatPackage:public Package{
 public:
@@ -34,6 +35,9 @@ public:
 public:
     ChatPackage(void *payload, size_t length);
     ChatPackage(CRYPT_TYPE crypt, DATA_TYPE TYPE, void *payload, size_t length);
+    ~ChatPackage(){
+        LOG_DEBUG("chat package destructure\n");
+    }
 public:
     // 判断 payload 指针指向的内存区域是否是一个完整的数据包
     static bool isOnePackage(void *payload, size_t length,size_t& frame,size_t& want);

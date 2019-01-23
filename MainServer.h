@@ -6,6 +6,7 @@
 #include "TConnection.h"
 #include "ThreadPool.h"
 #include "IOThread.h"
+#include "Cedis/RedisPool.h"
 
 #include <event.h>
 #include <vector>
@@ -40,6 +41,9 @@ public:
   inline int getBufferSize() const{
     return maxBufferSize;
   }
+  inline Redis *getRedis(){
+    return redis_pool->grabCedis();
+  }
 
 private:
   struct event_base *main_base;
@@ -47,7 +51,7 @@ private:
   
   int port_;
   int maxBufferSize;
-  ThreadPool *pools;
+  ThreadPool *thread_pools;
 
   // 使用共享智能指针
   std::vector<std::shared_ptr<IOThread> > iothreads_;
@@ -57,6 +61,7 @@ private:
 
   std::vector<TConnection *> activeTConnection;
   std::queue<TConnection *> connectionQueue;
+  std::shared_ptr<RedisPool> redis_pool;
 
   int selectIOThread;
 

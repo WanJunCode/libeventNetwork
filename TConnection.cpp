@@ -79,6 +79,7 @@ void TConnection::init(){
         bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
         // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
+        server_->getRedis()->executeCommand("lpush user %s",socket_->getSocketInfo().c_str());
     } else {
         LOG_DEBUG("TConnection create bufferevent fail ...\n");
     }
@@ -160,6 +161,7 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 // static
 void TConnection::read_cb(struct bufferevent *bev, void *args)
 {
+    TConnection *conn = (TConnection*)args;
     struct evbuffer *input = bufferevent_get_input(bev);
     LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
     struct evbuffer_iovec image;
@@ -170,14 +172,22 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
         // void * =>  unsigned char *
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         std::string msg((char *)image.iov_base, image.iov_len);
-        LOG_DEBUG("socket: [%d] from evbuffer %s \n",bufferevent_getfd(bev), msg.c_str());
+        LOG_DEBUG("socket: [%d] from evbuffer [%s] \n",bufferevent_getfd(bev), msg.c_str());
         LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 
         // 在此处将接受的到数据打包成一个　package
-        ChatPackage pkg(image.iov_base,image.iov_len);
+        std::shared_ptr<ChatPackage> pkg=make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
+        conn->record(pkg.get());
     }
 
     // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
     evbuffer_drain(input, image.iov_len);
     LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
+}
+
+void
+TConnection::record(ChatPackage *pkg){
+    std::string message;
+    message.append((char*)pkg->data(),pkg->length());
+    server_->getRedis()->executeCommand("lpush %s %s",socket_->getPeerHost().c_str(),message.c_str());
 }

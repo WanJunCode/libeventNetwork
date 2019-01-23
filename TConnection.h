@@ -13,6 +13,7 @@ class IOThread;
 // TConnection 只负责 TSocket 的快速启用 bufferevent
 // 析构函数中并不会关闭传入的 TSocket
 // evebtbase 来自 MainServer 或者 IOThread
+class ChatPackage;
 class TConnection
 {
 public:
@@ -35,6 +36,7 @@ private:
     IOThread *iothread_;
     struct event_base *base_;
     struct bufferevent *bev;
+    void record(ChatPackage* pkg);
 
 private:
     static void read_cb(struct bufferevent *bev, void *args);

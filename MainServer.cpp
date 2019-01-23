@@ -13,14 +13,14 @@
 typedef unsigned char BYTE;
 
 MainServer::MainServer()
-    :   port_(PORT),
-        selectIOThread(0),
-        maxBufferSize(MAXBUFFERSIZE)            // 定义　bufferevent　最大的水位
+    :port_(PORT),
+    selectIOThread(0),
+    maxBufferSize(MAXBUFFERSIZE)            // 定义　bufferevent　最大的水位
 {
     LOG_DEBUG("main server structure ...\n");
     main_base = event_base_new();
     transport_ = new MyTransport(this);
-    pools = new ThreadPool(POOL_SIZE);
+    thread_pools = new ThreadPool(POOL_SIZE);
 
     for(int i=0;i<IOTHREAD_SIZE;i++){
         // 使用智能指针，在析构函数中不再需要手动析构
@@ -29,8 +29,12 @@ MainServer::MainServer()
     
     // 开启 iothread loop
     for(int i=0;i<IOTHREAD_SIZE;i++){
-        pools->enqueue(std::ref(*iothreads_[i]));
+        thread_pools->enqueue(std::ref(*iothreads_[i]));
     }
+
+    redis_pool = make_shared<RedisPool>("127.0.0.1",6379,"",100,5);
+    thread_pools->enqueue(std::ref(*redis_pool));
+
 }
 
 MainServer::~MainServer()
@@ -46,10 +50,12 @@ MainServer::~MainServer()
         iothreads_[i]->breakLoop(false);
     }
 
-    if(pools != NULL)
+    redis_pool->exit();
+
+    if(thread_pools != NULL)
     {
-        delete pools;
-        pools = NULL;
+        delete thread_pools;
+        thread_pools = NULL;
     }
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
@@ -156,7 +162,7 @@ struct event_base *MainServer::getBase()
 }
 
 ThreadPool *MainServer::getPool(){
-    return pools;
+    return thread_pools;
 }
 
 

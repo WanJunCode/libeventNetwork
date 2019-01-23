@@ -1,89 +1,92 @@
-#include "TCedis.h"
-#include "TCedisPool.h"
+#include "Redis.h"
+#include "RedisPool.h"
 #include <iostream>
+#include "../log.h"
 using namespace std;
 
+int Redis::count=0;
+
 // 构造函数
-TCedis::TCedis(const std::string& host, const unsigned port,const std::string& pass){
+Redis::Redis(const std::string& host, const unsigned port,const std::string& pass){
     Connect(host,port,pass);
+    count++;
 }
 
-
-void TCedis::Connect(const std::string& host, const unsigned int port,const std::string& pass){
-    c = redisConnect(host.c_str(), port);
-    if (c->err != REDIS_OK){
-        redisFree(c);
-        printf("fail to connect redis server.\n");
+void Redis::Connect(const std::string& host, const unsigned int port,const std::string& pass){
+    conn_ = redisConnect(host.c_str(), port);
+    if (conn_->err != REDIS_OK){
+        redisFree(conn_);
+        LOG_DEBUG("fail to connect redis server.\n");
     }else{
-        redisCommand(c,"AUTH %s",pass.data());
+        redisCommand(conn_,"AUTH %s",pass.data());
         useable=true;
     }
 }
 
-TCedis::~TCedis(){
-    redisFree(c);
+Redis::~Redis(){
+    redisFree(conn_);
+    count--;
 }
 
-void TCedis::append(const std::vector<std::string> &commands){
+void Redis::append(const std::vector<std::string> &commands){
     std::vector<const char*> argv;
     argv.reserve(commands.size());
     std::vector<size_t> argvlen;
     argvlen.reserve(commands.size());
 
     // std::string ==> [ const char* & size_t ]
-
     for (std::vector<std::string>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
         // string.c_str() & string.size()
         argv.push_back(it->c_str());
         argvlen.push_back(it->size());
     }
     // std::vector.data()
-    int ret = redisAppendCommandArgv(c, static_cast<int>(commands.size()), argv.data(), argvlen.data());
+    int ret = redisAppendCommandArgv(conn_, static_cast<int>(commands.size()), argv.data(), argvlen.data());
     if (ret != REDIS_OK){
-        printf("append redis command fail\n");
+        LOG_DEBUG("append redis command fail\n");
     }
 }
 
-reply TCedis::get_reply(){
-    redisReply *r;
-    int error = redisGetReply(c, reinterpret_cast<void**>(&r));
+Reply Redis::get_reply(){
+    redisReply *rep;
+    int error = redisGetReply(conn_, reinterpret_cast<void**>(&rep));
     if (error != REDIS_OK){
-        printf("get_reply fail\n");
+        LOG_DEBUG("get_reply fail\n");
     }
-    reply ret(r);
-    freeReplyObject(r);
-    if (ret.type() == reply::type_t::ERROR &&
+    Reply ret(rep);
+    freeReplyObject(rep);
+    if (ret.type() == Reply::type_t::ERROR &&
 		(ret.str().find("READONLY") == 0) ){
-        printf("get_reply type fail\n");
+        LOG_DEBUG("get_reply type fail\n");
     }
     return ret;
 }
 
 // 获得多个返回结果
-std::vector<reply> TCedis::get_replies(unsigned int count){
-    std::vector<reply> ret;
+std::vector<Reply> Redis::get_replies(unsigned int count){
+    std::vector<Reply> ret;
     for (unsigned int i=0; i < count; ++i){
         ret.push_back(get_reply());
     }
     return ret;
 }
 
-bool TCedis::is_valid() const{
-    return c->err == REDIS_OK;
+bool Redis::is_valid() const{
+    return conn_->err == REDIS_OK;
 }
 
-reply TCedis::run(const std::vector<std::string>& args){
+Reply Redis::run(const std::vector<std::string>& args){
     std::unique_lock<std::mutex> locker(mutex_);            // 上锁，防止多个线程的争夺
     if(!useable){
-        reply r = reply();
+        Reply r = Reply();
         r.setDisconn(true);
         return r;
     }
     // 断开连接后 ping 返回 null
     if(!ping()){
         useable = false;
-        reply r = reply();
-        pool_->move(self);
+        Reply r = Reply();
+        pool_->move(this);
         r.setDisconn(true);
         return r;
     }
@@ -92,11 +95,11 @@ reply TCedis::run(const std::vector<std::string>& args){
     return get_reply();
 }
 
-reply TCedis::executeCommand(const char *format, ...){
+Reply Redis::executeCommand(const char *format, ...){
     std::unique_lock<std::mutex> locker(mutex_);            // 上锁，防止多个线程的争夺
 
     if(!useable){
-        reply r = reply();
+        Reply r = Reply();
         r.setDisconn(true);
         return r;
     }
@@ -104,24 +107,24 @@ reply TCedis::executeCommand(const char *format, ...){
     // 使用 hiredis 方法
 	va_list ap;
 	va_start(ap, format);
-	redisReply* r = (redisReply*)redisvCommand(c, format, ap);
+	redisReply* r = (redisReply*)redisvCommand(conn_, format, ap);
 	va_end(ap);
 
     if(r==NULL){
         useable = false;
-        reply r = reply();
-        pool_->move(self);
+        Reply r = Reply();
+        pool_->move(this);
         r.setDisconn(true);
         return r;
     }
 
-    reply ret(r);
+    Reply ret(r);
     freeReplyObject(r);
 	return ret;
 }
 
-bool TCedis::ping(){
-    redisReply *myreply=(redisReply *)redisCommand(c,"PING");
+bool Redis::ping(){
+    redisReply *myreply=(redisReply *)redisCommand(conn_,"PING");
     if(myreply==NULL){
         return false;
     }else{

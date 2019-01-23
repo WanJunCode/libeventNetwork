@@ -1,5 +1,5 @@
-#ifndef __TCEDIS_H
-#define __TCEDIS_H
+#ifndef __Redis_H
+#define __Redis_H
 
 #include <string>
 #include <vector>
@@ -7,44 +7,43 @@
 #include <iostream>
 #include <mutex>
 #include <hiredis/hiredis.h>
-#include "reply.h"
+#include "Reply.h"
 
 using namespace std;
 
 struct redisContext;
-class reply;
-class TCedisPool;
+class Reply;
+class RedisPool;
 
-class TCedis
-{
+class Redis{
 public:
-    typedef std::shared_ptr<TCedis> ptr_t;
+    typedef std::shared_ptr<Redis> ptr_t;
     inline static ptr_t create(const std::string& host="localhost",
                                const unsigned int port=6379,
                                const std::string& pass="wanjun"){
-        return ptr_t(new TCedis(host, port, pass));
+        return ptr_t(new Redis(host, port, pass));
     }
+    Redis(const std::string& host, const unsigned int port,const std::string& pass);
+    ~Redis();
 
-    ~TCedis();
-
-    reply run(const std::vector<std::string>& args);
-    reply executeCommand(const char *format, ...);
+    Reply run(const std::vector<std::string>& args);
+    Reply executeCommand(const char *format, ...);
 
     bool is_valid() const;
 
     void Connect(const std::string& host, const unsigned int port,const std::string& pass);
     
     void disconnect(){                                      // 用于测试断开连接
-        // std::unique_lock<std::mutex> locker(mutex_);        // 上锁，防止多个线程的争夺   不可省略   会出错 
+        // 上锁，防止多个线程的争夺   不可省略   会出错 
         std::lock_guard<std::mutex> locker(mutex_);
-        redisCommand(c,"QUIT");
+        redisCommand(conn_,"QUIT");
     }
 
     void reConnect(){                                  // 重连
-        redisReconnect(c);
+        redisReconnect(conn_);
     }
 
-    void attach(TCedisPool* pool){
+    void attach(RedisPool* pool){
         pool_=pool;
     }
 
@@ -58,18 +57,19 @@ public:
     bool ping();
 
 private:
-    TCedis(const std::string& host, const unsigned int port,const std::string& pass);
     void append(const std::vector<std::string>& args);
-    reply get_reply();
-    std::vector<reply> get_replies(unsigned int count);
+    Reply get_reply();
+    std::vector<Reply> get_replies(unsigned int count);
 
 public:
-    ptr_t self;                             // 保存自己的 指针 ，用于pool 调用 move 存储到queue
+    static int count;
+
 private:
     std::mutex mutex_; 
-    TCedisPool* pool_;                      // 绑定的连接池
+    RedisPool* pool_;                      // 绑定的连接池
     volatile bool useable;                  // 判断当前连接是否可用
-    redisContext *c;                        // hiredis 内部的 connection 
+    redisContext *conn_;                        // hiredis 内部的 connection 
 };
+
 
 #endif

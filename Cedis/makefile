@@ -2,4 +2,4 @@
 all:
 	g++ *.cpp -lhiredis -o main
 clean:
-	rm -rf main
+	rm -rf main core

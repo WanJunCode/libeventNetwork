@@ -6,17 +6,18 @@
 
 // 声明 hiredis 中的结构体
 struct redisReply;
-class TCedis;
+class Redis;
 
 /**
  * ＠brief reply contain the value of return , it can be useds as int or string / vector;
  */
-class reply
+class Reply
 {
 public:
-    reply(redisReply *reply);               // 构造函数
-    reply();
+    Reply(redisReply *reply);               // 构造函数
+    Reply();
 
+    // 枚举类
     enum class type_t{
         STRING = 1,
         ARRAY = 2,
@@ -45,7 +46,7 @@ public:
      * @brief Returns a vector of sub-replies if present, otherwise an empty one
      * @return
      */
-    inline const std::vector<reply>& elements() const { return _elements; }
+    inline const std::vector<Reply>& elements() const { return _elements; }
 
     // reply  ---> string&
     inline operator const std::string&() const { return _str; }
@@ -82,7 +83,8 @@ private:
     type_t _type;                           // reply 的类型
     std::string _str;                       // 存储 str
     long long _integer;                     // 存储 integer
-    std::vector<reply> _elements;           // 存储 elements
+    std::vector<Reply> _elements;           // 存储 elements
+
     bool isDis;                             // 判断是否断开 默认是false
 };
 

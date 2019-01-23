@@ -1,7 +1,7 @@
 #include <hiredis/hiredis.h>
-#include "reply.h"
+#include "Reply.h"
 
-reply::reply(redisReply *c_reply):
+Reply::Reply(redisReply *c_reply):
     _type(type_t::ERROR),
     _integer(0),
     isDis(false)
@@ -19,7 +19,7 @@ reply::reply(redisReply *c_reply):
             break;
 	    case type_t::ARRAY:
             for (size_t i=0; i < c_reply->elements; ++i) {
-                _elements.push_back(reply(c_reply->element[i]));
+                _elements.push_back(Reply(c_reply->element[i]));
             }
             break;
         default:
@@ -28,8 +28,9 @@ reply::reply(redisReply *c_reply):
 }
 
 //构造函数
-reply::reply():
-_type(type_t::ERROR),
-_integer(0),
-isDis(false){
+Reply::Reply():
+    _type(type_t::ERROR),
+    _integer(0),
+    isDis(false){
+
 }
