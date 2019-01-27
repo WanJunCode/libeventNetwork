@@ -48,6 +48,7 @@
         "cstring": "cpp",
         "functional": "cpp",
         "future": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "algorithm": "cpp"
     }
 }

@@ -7,6 +7,7 @@
 #include "ThreadPool.h"
 #include "IOThread.h"
 #include "Cedis/RedisPool.h"
+#include "Package/MultipleProtocol.h"
 
 #include <event.h>
 #include <vector>
@@ -21,7 +22,7 @@
 class TSocket;
 class MyTransport;
 class TConnection;
-
+class Protocol;
 class MainServer
 {
 public:
@@ -45,6 +46,10 @@ public:
     return redis_pool->grabCedis();
   }
 
+  Protocol *getProtocol(){
+    return protocol;
+  }
+
 private:
   struct event_base *main_base;
   struct event *ev_stdin;     // 处理命令行输入
@@ -64,6 +69,7 @@ private:
   std::shared_ptr<RedisPool> redis_pool;
 
   int selectIOThread;
+  Protocol *protocol;
 
 private:
   static void stdin_cb(evutil_socket_t stdin_fd, short what, void *args);

@@ -9,7 +9,8 @@ typedef unsigned char BYTE;
 TConnection::TConnection(TSocket *sock, MainServer *server)
     : socket_(sock),
     server_(server),
-    base_(server_->getBase())
+    base_(server_->getBase()),
+    appstate(AppState::APP_CLOSE_CONNECTION)
 {
     LOG_DEBUG("TConnection structure ... socket [%d]\n", socket_->getSocketFD());
 
@@ -49,6 +50,10 @@ TConnection::~TConnection(){
 
 // 初始化设置，重新设置 TSocket
 void TConnection::init(){
+    appstate=AppState::TRANS_INIT;
+    socketState = SocketState::SOCKET_RECV_FRAMING;
+
+    lastUpdate_=time(NULL);
 
     LOG_DEBUG("TConnection init bufferevent...\n");
     int maxBufferSize_ = server_->getBufferSize();
@@ -116,6 +121,7 @@ TSocket *TConnection::getSocket()
 
 void TConnection::close()
 {
+    appstate=AppState::APP_CLOSE_CONNECTION;
     // if(socket_)
     // {
     //     socket_->close();
@@ -162,27 +168,9 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 void TConnection::read_cb(struct bufferevent *bev, void *args)
 {
     TConnection *conn = (TConnection*)args;
-    struct evbuffer *input = bufferevent_get_input(bev);
-    LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
-    struct evbuffer_iovec image;
-    int ret = evbuffer_peek(input, -1, NULL, &image, 1);
-    LOG_DEBUG("evbuffer_peek return block size= [%d]\n", ret);
-    if (ret)
-    {
-        // void * =>  unsigned char *
-        BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
-        std::string msg((char *)image.iov_base, image.iov_len);
-        LOG_DEBUG("socket: [%d] from evbuffer [%s] \n",bufferevent_getfd(bev), msg.c_str());
-        LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+    conn->lastUpdate_ = time(NULL);
+    conn->workSocket();
 
-        // 在此处将接受的到数据打包成一个　package
-        std::shared_ptr<ChatPackage> pkg=make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
-        conn->record(pkg.get());
-    }
-
-    // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
-    evbuffer_drain(input, image.iov_len);
-    LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
 }
 
 void
@@ -190,4 +178,53 @@ TConnection::record(ChatPackage *pkg){
     std::string message;
     message.append((char*)pkg->data(),pkg->length());
     server_->getRedis()->executeCommand("lpush %s %s",socket_->getPeerHost().c_str(),message.c_str());
+}
+
+void
+TConnection::workSocket(){
+    switch(socketState){
+        case SocketState::SOCKET_RECV_FRAMING:
+            recv_framing();
+            break;
+        case SocketState::SOCKET_RECV:
+            recv();
+            break;
+        default:
+            break;
+    }
+}
+
+void
+TConnection::recv_framing(){
+    struct evbuffer *input = bufferevent_get_input(bev);
+    LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
+    struct evbuffer_iovec image;
+    int ret = evbuffer_peek(input, -1, NULL, &image, 1);
+    if (ret){
+        // void * =>  unsigned char *
+        BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+
+        std::string msg((char *)image.iov_base, image.iov_len);
+        LOG_DEBUG("socket: [%d] from evbuffer [%s] \n",bufferevent_getfd(bev), msg.c_str());
+        LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+        size_t framePos = 0;
+
+        if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
+            LOG_DEBUG("parse one package true\n");
+        }else{
+            LOG_DEBUG("parse one package false\n");
+        }
+
+        // 在此处将接受的到数据打包成一个　package
+        std::shared_ptr<ChatPackage> pkg = make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
+        record(pkg.get());
+    }
+    // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
+    evbuffer_drain(input, image.iov_len);
+    LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
+}
+
+void
+TConnection::recv(){
+
 }

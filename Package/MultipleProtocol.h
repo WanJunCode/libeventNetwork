@@ -17,7 +17,7 @@ public:
 public:
     virtual bool parseOnePackage(BYTE *package,size_t dataSize,size_t &framePos,size_t &frameSize,size_t &readWant) override;
     virtual Package *getOnePackage(BYTE * package, size_t dataSize) override;    
-    virtual void addProtocol(std::shared_ptr<Protocol> protocol ) override;
+    virtual void addProtocol(std::shared_ptr<Protocol> protocol);
 
 private:
     Protocol_t protocols_;

@@ -68,8 +68,7 @@ public:
     virtual Package *getOnePackage(BYTE * package, size_t dataSize) = 0;
 
     // 虚函数有自己的实现，子类可以不覆盖该函数
-    virtual void addProtocol(std::shared_ptr<Protocol> protocol) {
-    }
+    virtual void addProtocol(std::shared_ptr<Protocol> protocol) { }
 
     virtual BYTE *serialize(Package *package) {
         return (BYTE *)package->getRawData();

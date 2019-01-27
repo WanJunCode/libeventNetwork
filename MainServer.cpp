@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include "IOThread.h"
+#include "Package/ChatPackage.h"
 
 #define MAXBUFFERSIZE 1024
 typedef unsigned char BYTE;
@@ -35,6 +36,8 @@ MainServer::MainServer()
     redis_pool = make_shared<RedisPool>("127.0.0.1",6379,"",100,5);
     thread_pools->enqueue(std::ref(*redis_pool));
 
+    protocol = new MultipleProtocol();
+    protocol->addProtocol(std::make_shared<ChatProtocol>());
 }
 
 MainServer::~MainServer()
