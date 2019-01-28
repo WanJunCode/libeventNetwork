@@ -111,3 +111,24 @@ ChatProtocol::getOnePackage(BYTE * package, size_t dataSize){
     }
     return nullptr;
 }
+
+bool
+EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant){
+    BYTE *ptr=package;
+    if(ptr[0]=='A' && ptr[1]=='C' && ptr[2]=='E')
+        return true;
+    else{
+        return false;
+    }
+}
+
+Package *
+EchoProtocol::getOnePackage(BYTE * package, size_t dataSize){
+    // size_t framePos,frameSize,readWant = 0;
+    // if(parseOnePackage(package,dataSize,framePos,frameSize,readWant)){
+    //     if(frameSize<=dataSize && framePos==0 && readWant==0 ){
+    //         return new ChatPackage(package,frameSize);
+    //     }
+    // }
+    return nullptr;
+}

@@ -38,6 +38,8 @@ MainServer::MainServer()
 
     protocol = new MultipleProtocol();
     protocol->addProtocol(std::make_shared<ChatProtocol>());
+    protocol->addProtocol(std::make_shared<EchoProtocol>());
+
 }
 
 MainServer::~MainServer()
@@ -83,7 +85,6 @@ MainServer::~MainServer()
 void MainServer::serve()
 {
     LOG_DEBUG("serve() ... start \n");
-
     // 添加一个 控制台输入事件
     ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdin_cb, this);
     event_add(ev_stdin, NULL);

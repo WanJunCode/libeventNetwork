@@ -35,9 +35,7 @@ public:
 public:
     ChatPackage(void *payload, size_t length);
     ChatPackage(CRYPT_TYPE crypt, DATA_TYPE TYPE, void *payload, size_t length);
-    ~ChatPackage(){
-        LOG_DEBUG("chat package destructure\n");
-    }
+    ~ChatPackage(){};
 public:
     // 判断 payload 指针指向的内存区域是否是一个完整的数据包
     static bool isOnePackage(void *payload, size_t length,size_t& frame,size_t& want);
@@ -67,11 +65,19 @@ private:
 class ChatProtocol:public Protocol{
 public:
     explicit ChatProtocol(ProtocolEventHandler *headler=nullptr):
-        Protocol(headler){
-    }
-    virtual ~ChatProtocol(){
-    }
+        Protocol(headler){};
+    virtual ~ChatProtocol(){};
 
+public:
+    virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant);
+    virtual Package *getOnePackage(BYTE * package, size_t dataSize);
+};
+
+class EchoProtocol:public Protocol{
+public:
+    explicit EchoProtocol(ProtocolEventHandler *headler=nullptr):
+        Protocol(headler){};
+    virtual ~EchoProtocol(){};
 public:
     virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant);
     virtual Package *getOnePackage(BYTE * package, size_t dataSize);
