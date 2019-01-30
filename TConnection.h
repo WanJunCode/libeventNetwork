@@ -56,6 +56,8 @@ public:
     void recv_framing();
     void recv();
 
+private:
+    void read_request();
 public:
     time_t lastUpdate_;
 
@@ -71,6 +73,7 @@ private:
     size_t readWant_;
     /// Read buffer
     size_t frameSize_;
+    size_t maxBufferSize_;
 
 private:
     static void read_cb(struct bufferevent *bev, void *args);

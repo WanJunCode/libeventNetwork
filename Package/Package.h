@@ -31,6 +31,8 @@ public:
         return (0==rawDataLength);
     }
 
+    virtual void debug() const{ }
+
 protected:
     std::string rawData;
     std::string factoryCode;

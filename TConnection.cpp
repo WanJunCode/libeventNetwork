@@ -1,6 +1,5 @@
 #include "TConnection.h"
 #include "log.h"
-
 #include <string.h>
 #include "Package/ChatPackage.h"
 
@@ -10,53 +9,45 @@ TConnection::TConnection(TSocket *sock, MainServer *server)
     : socket_(sock),
     server_(server),
     base_(server_->getBase()),
-    appstate(AppState::APP_CLOSE_CONNECTION)
-{
+    appstate(AppState::APP_CLOSE_CONNECTION){
     LOG_DEBUG("TConnection structure ... socket [%d]\n", socket_->getSocketFD());
-
     init();
 }
 
 TConnection::TConnection(TSocket *sock, IOThread *iothread)
     : socket_(sock),
     iothread_(iothread),
-    base_(iothread_->getBase())
-{
+    base_(iothread_->getBase()){
     server_ = iothread_->getServer();
     if(server_ == NULL){
         LOG_DEBUG("iothread get server but is null\n");
     }
-
     LOG_DEBUG("TConnection structure iothread ... socket [%d]\n", socket_->getSocketFD());
-
     init();
 }
 
 TConnection::~TConnection(){
-
     LOG_DEBUG("析构函数 TConnection ... \n");
-    if(socket_ != NULL)
-    {
+    if(socket_ != NULL){
         delete socket_;
         socket_ =NULL;
     }
-
-    if(bev != NULL)
-    {
+    if(bev != NULL){
         bufferevent_free(bev);
         bev = NULL;
     }
 }
 
 // 初始化设置，重新设置 TSocket
-void TConnection::init(){
+void 
+TConnection::init(){
     appstate=AppState::TRANS_INIT;
     socketState = SocketState::SOCKET_RECV_FRAMING;
 
     lastUpdate_=time(NULL);
+    maxBufferSize_ = server_->getBufferSize();
 
     LOG_DEBUG("TConnection init bufferevent...\n");
-    int maxBufferSize_ = server_->getBufferSize();
     bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
     if (bev) {
         if(socket_->getSocketFD() == INVALID_SOCKET){
@@ -84,13 +75,16 @@ void TConnection::init(){
         bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
         // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
+        
         server_->getRedis()->executeCommand("lpush user %s",socket_->getSocketInfo().c_str());
+    
     } else {
         LOG_DEBUG("TConnection create bufferevent fail ...\n");
     }
 }
 
-void TConnection::setSocket(TSocket *socket)
+void 
+TConnection::setSocket(TSocket *socket)
 {
     if(socket) {
         LOG_DEBUG("TConnection 重新设置 socket \n");
@@ -103,23 +97,91 @@ void TConnection::setSocket(TSocket *socket)
 }
 
 // 开启 client 在 base 上的 bufferevent
-void TConnection::transition()
+void 
+TConnection::transition()
 {
+    switch(appstate){
+        case AppState::TRANS_INIT:
+            appstate = AppState::APP_INIT;
+            bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
+            transition();
+            break;
+        case AppState::APP_INIT:
+            socketState = SocketState::SOCKET_RECV_FRAMING;
+            appstate = AppState::APP_READ_FRAME_SIZE;
+            bufferevent_setwatermark(bev, EV_READ, 0, maxBufferSize_);
+            // Work the socket right away
+            workSocket();
+            break;
+        case AppState::APP_READ_FRAME_SIZE:
+            // 已经读取到了一个完整的数据包的大小
+            // Move into read request state
+            if (0==readWant_) {
+                //　已经读取到完整的数据包
+                appstate = AppState::APP_READ_REQUEST;
+                transition();
+            } else {
+               // 还有需要读取的数据　readWant != 0
+                socketState = SocketState::SOCKET_RECV; //　下一次读取
+                appstate = AppState::APP_READ_REQUEST;
+                // 设置剩余要读取的数据包长度　为　readWant_
+                bufferevent_setwatermark(bev, EV_READ, readWant_, maxBufferSize_);
+            }
+            break;
+
+        case AppState::APP_READ_REQUEST:
+            read_request();
+            break;
+        default:
+            LOG_DEBUG("Unexpect application state!");
+            return;
+    }
     LOG_DEBUG("TConnection transport ...\n");
-    bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
 }
 
-MainServer *TConnection::getServer()
+void 
+TConnection::read_request(){
+        // 读取到了一个完整的数据包　｜｜　第二次读取到数据包剩余数据时
+        // We are done reading the request, package the read buffer into transport
+        // and get back some data from the dispatch function
+        // server_->incrementActiveProcessors();
+
+        //其实就是取出bufferevent中的output
+        struct evbuffer *input = bufferevent_get_input(bev);
+        struct evbuffer_iovec image;
+        if (evbuffer_peek(input, -1, NULL, &image, 1)) {
+            BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+            Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
+            if (!pkg) {
+                LOG_DEBUG("construct TPackage\n");
+            } else {
+                // 是否是线程池处理
+                ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
+                record((ChatPackage *)(pkg));
+                delete pkg;
+                // pkg 处理完后需要删除
+            }
+        }
+        evbuffer_drain(input, frameSize_);
+        // The application is now on the task to finish
+        appstate = AppState::APP_INIT;
+        transition();
+}
+
+MainServer *
+TConnection::getServer()
 {
     return server_;
 }
 
-TSocket *TConnection::getSocket()
+TSocket *
+TConnection::getSocket()
 {
     return socket_;
 }
 
-void TConnection::close()
+void 
+TConnection::close()
 {
     appstate=AppState::APP_CLOSE_CONNECTION;
     // if(socket_)
@@ -142,7 +204,8 @@ void TConnection::close()
     }
 }
 
-bool TConnection::notify(){
+bool 
+TConnection::notify(){
     if(iothread_){
         return iothread_->notify(this);
     }
@@ -170,7 +233,6 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
     conn->workSocket();
-
 }
 
 void
@@ -187,7 +249,7 @@ TConnection::workSocket(){
             recv_framing();
             break;
         case SocketState::SOCKET_RECV:
-            recv();
+            transition();
             break;
         default:
             break;
@@ -203,28 +265,29 @@ TConnection::recv_framing(){
     if (ret){
         // void * =>  unsigned char *
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+        size_t framePos = 0;
 
         std::string msg((char *)image.iov_base, image.iov_len);
         LOG_DEBUG("socket: [%d] from evbuffer [%s] \n",bufferevent_getfd(bev), msg.c_str());
         LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
-        size_t framePos = 0;
-
+            
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("parse one package true\n");
-        }else{
-            LOG_DEBUG("parse one package false\n");
+            if(framePos > 0){
+                evbuffer_drain(input,framePos);
+            }
+            // 接收到一个完整的数据包，开始处理数据包
+            transition();
+        }else if(framePos > 0){
+            LOG_DEBUG("Can't parse one package true\n");
+            // 没收接收到有用的数据包，则丢弃多余的数据
+            evbuffer_drain(input,framePos);
         }
 
-        // 在此处将接受的到数据打包成一个　package
-        std::shared_ptr<ChatPackage> pkg = make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
-        record(pkg.get());
+        // std::shared_ptr<ChatPackage> pkg = make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
+        // record(pkg.get());
     }
     // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
-    evbuffer_drain(input, image.iov_len);
+    // evbuffer_drain(input, image.iov_len);
     LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
-}
-
-void
-TConnection::recv(){
-
 }

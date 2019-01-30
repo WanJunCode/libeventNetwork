@@ -10,7 +10,7 @@
 #include "IOThread.h"
 #include "Package/ChatPackage.h"
 
-#define MAXBUFFERSIZE 1024
+#define MAXBUFFERSIZE (1024*16*16)
 typedef unsigned char BYTE;
 
 MainServer::MainServer()
