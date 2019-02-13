@@ -77,6 +77,7 @@ MainServer::~MainServer()
         delete conn;
     }
 
+    delete protocol;
     event_free(ev_stdin);
     // 释放 mainserver 的 eventbase
     event_base_free(main_base);

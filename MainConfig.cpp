@@ -28,7 +28,9 @@ void MainConfig::loadFromFile(const std::string path){
 
 bool MainConfig::parseFromJson(const std::string &json){
     try{
+        // 可能导致内存泄露，单例模式
         Json::Value root;
+
         if(Json::Reader().parse(json,root)){
             if(!root["ThreadPools"].isNumeric()){
                 LOG_DEBUG("config json node[ThreadPools] is not numeric\n");

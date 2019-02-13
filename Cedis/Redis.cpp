@@ -18,7 +18,8 @@ void Redis::Connect(const std::string& host, const unsigned int port,const std::
         redisFree(conn_);
         LOG_DEBUG("fail to connect redis server.\n");
     }else{
-        redisCommand(conn_,"AUTH %s",pass.data());
+        redisReply *myreply=(redisReply *)redisCommand(conn_,"AUTH %s",pass.data());
+        freeReplyObject(myreply);
         useable=true;
     }
 }
