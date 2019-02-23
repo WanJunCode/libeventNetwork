@@ -80,8 +80,6 @@ TConnection::init(){
 
         readWant_ = 0;
         frameSize_ = 0;
-        maxBufferSize_ = 0;
-
     } else {
         LOG_DEBUG("TConnection create bufferevent fail ...\n");
     }
@@ -104,6 +102,9 @@ TConnection::setSocket(TSocket *socket)
 void 
 TConnection::transition()
 {
+    static int deep = 0;
+    deep++;
+    LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
     switch(appstate){
         case AppState::TRANS_INIT:
             LOG_DEBUG("trans init\n");
@@ -144,37 +145,40 @@ TConnection::transition()
             LOG_DEBUG("Unexpect application state!");
             return;
     }
-    LOG_DEBUG("TConnection transport ...\n");
+    LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
+    deep--;
+    LOG_DEBUG("TConnection transport ...离开\n");
 }
 
 void 
 TConnection::read_request(){
-        // 读取到了一个完整的数据包　｜｜　第二次读取到数据包剩余数据时
-        // We are done reading the request, package the read buffer into transport
-        // and get back some data from the dispatch function
-        // server_->incrementActiveProcessors();
+    LOG_DEBUG("读取到了一个完整的数据包 开始处理数据包\n");
+    // 读取到了一个完整的数据包　｜｜　第二次读取到数据包剩余数据时
+    // We are done reading the request, package the read buffer into transport
+    // and get back some data from the dispatch function
+    // server_->incrementActiveProcessors();
 
-        //其实就是取出bufferevent中的output
-        struct evbuffer *input = bufferevent_get_input(bev);
-        struct evbuffer_iovec image;
-        if (evbuffer_peek(input, -1, NULL, &image, 1)) {
-            BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
-            Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
-            if (!pkg) {
-                LOG_DEBUG("construct TPackage\n");
-            } else {
-                // 是否是线程池处理
-                ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
-                record((ChatPackage *)(pkg));
-                delete pkg;
-                // pkg 处理完后需要删除
-            }
+    //其实就是取出bufferevent中的output
+    struct evbuffer *input = bufferevent_get_input(bev);
+    struct evbuffer_iovec image;
+    if (evbuffer_peek(input, -1, NULL, &image, 1)) {
+        BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
+        Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
+        if (!pkg) {
+            LOG_DEBUG("construct TPackage failure 数据包构造失败\n");
+        } else {
+            // 是否是线程池处理
+            ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
+            record((ChatPackage *)(pkg));
+            delete pkg;
+            // pkg 处理完后需要删除
         }
-        LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
-        evbuffer_drain(input, frameSize_);
-        // The application is now on the task to finish
-        appstate = AppState::APP_INIT;
-        transition();
+    }
+    LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
+    evbuffer_drain(input, frameSize_);
+    // The application is now on the task to finish
+    appstate = AppState::APP_INIT;
+    transition();
 }
 
 MainServer *
@@ -240,6 +244,7 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
 {
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
+    LOG_DEBUG("第一次触发 read callback\n");
     conn->workSocket();
 }
 
@@ -254,6 +259,7 @@ void
 TConnection::workSocket(){
     switch(socketState){
         case SocketState::SOCKET_RECV_FRAMING:
+            LOG_DEBUG("SocketState::SOCKET_RECV_FRAMING   开始接受数据\n");
             recv_framing();
             break;
         case SocketState::SOCKET_RECV:
@@ -271,7 +277,6 @@ TConnection::recv_framing(){
     struct evbuffer_iovec image;
     int ret = evbuffer_peek(input, -1, NULL, &image, 1);
     if (ret){
-        // void * =>  unsigned char *
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
@@ -294,8 +299,10 @@ TConnection::recv_framing(){
 
         // std::shared_ptr<ChatPackage> pkg = make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
         // record(pkg.get());
+    } else {
+        LOG_DEBUG("evbuffer_peek 失败\n");
     }
     // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
     // evbuffer_drain(input, image.iov_len);
-    LOG_DEBUG("after read input length = %lu\n\n", evbuffer_get_length(input));
+    LOG_DEBUG("after read input length = %lu\n", evbuffer_get_length(input));
 }
