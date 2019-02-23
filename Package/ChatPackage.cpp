@@ -112,12 +112,28 @@ ChatProtocol::getOnePackage(BYTE * package, size_t dataSize){
     return nullptr;
 }
 
+EchoPackage::EchoPackage(void *payload, size_t length)
+    :Package(payload,length){
+}
+
+EchoPackage::~EchoPackage(){
+
+}
+
+// framePos  frameSize  readWant
 bool
 EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant){
     BYTE *ptr=package;
-    if(ptr[0]=='A' && ptr[1]=='C' && ptr[2]=='E')
+    EchoPackage::ECHO_HEADER_t *header = (EchoPackage::ECHO_HEADER_t *)ptr;
+    uint16_t datasize = ntohs(header->length);
+    if(header->identity == 0x7E){
+        LOG_DEBUG("ECHO protocol get ace protocol header\n");
+        LOG_DEBUG("data size = [%d]\n",datasize);
+        framePos = 0;
+        readWant = 0;
+        frameSize = dataSize + sizeof(EchoPackage::ECHO_HEADER_t);
         return true;
-    else{
+    }else{
         return false;
     }
 }

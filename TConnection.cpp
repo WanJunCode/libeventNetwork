@@ -41,7 +41,7 @@ TConnection::~TConnection(){
 // 初始化设置，重新设置 TSocket
 void 
 TConnection::init(){
-    appstate=AppState::TRANS_INIT;
+    appstate = AppState::TRANS_INIT;
     socketState = SocketState::SOCKET_RECV_FRAMING;
 
     lastUpdate_=time(NULL);
@@ -77,7 +77,11 @@ TConnection::init(){
         bufferevent_disable(bev,EV_READ | EV_WRITE);
         
         server_->getRedis()->executeCommand("lpush user %s",socket_->getSocketInfo().c_str());
-    
+
+        readWant_ = 0;
+        frameSize_ = 0;
+        maxBufferSize_ = 0;
+
     } else {
         LOG_DEBUG("TConnection create bufferevent fail ...\n");
     }
@@ -102,11 +106,13 @@ TConnection::transition()
 {
     switch(appstate){
         case AppState::TRANS_INIT:
+            LOG_DEBUG("trans init\n");
             appstate = AppState::APP_INIT;
             bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
             transition();
             break;
         case AppState::APP_INIT:
+            LOG_DEBUG("app init\n");
             socketState = SocketState::SOCKET_RECV_FRAMING;
             appstate = AppState::APP_READ_FRAME_SIZE;
             bufferevent_setwatermark(bev, EV_READ, 0, maxBufferSize_);
@@ -114,6 +120,7 @@ TConnection::transition()
             workSocket();
             break;
         case AppState::APP_READ_FRAME_SIZE:
+            LOG_DEBUG("app read frame size\n");
             // 已经读取到了一个完整的数据包的大小
             // Move into read request state
             if (0==readWant_) {
@@ -130,6 +137,7 @@ TConnection::transition()
             break;
 
         case AppState::APP_READ_REQUEST:
+            LOG_DEBUG("app read request\n");
             read_request();
             break;
         default:
@@ -162,6 +170,7 @@ TConnection::read_request(){
                 // pkg 处理完后需要删除
             }
         }
+        LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
         evbuffer_drain(input, frameSize_);
         // The application is now on the task to finish
         appstate = AppState::APP_INIT;
@@ -185,9 +194,7 @@ TConnection::close()
 {
     appstate=AppState::APP_CLOSE_CONNECTION;
     // if(socket_)
-    // {
     //     socket_->close();
-    // }
 
     if(bev != NULL)
     {
@@ -223,6 +230,7 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
         LOG_DEBUG("client bufferevent eof...\n");
     }
 
+    LOG_DEBUG("TConnection error callback so close connection\n");
     // client 断开连接
     conn->close();
 }
@@ -267,13 +275,13 @@ TConnection::recv_framing(){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
-        std::string msg((char *)image.iov_base, image.iov_len);
-        LOG_DEBUG("socket: [%d] from evbuffer [%s] \n",bufferevent_getfd(bev), msg.c_str());
         LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
-            
+
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
+            LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
             LOG_DEBUG("parse one package true\n");
             if(framePos > 0){
+                LOG_DEBUG("frame position [%d] greater than zero\n",framePos);
                 evbuffer_drain(input,framePos);
             }
             // 接收到一个完整的数据包，开始处理数据包

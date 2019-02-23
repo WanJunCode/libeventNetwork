@@ -73,7 +73,22 @@ public:
     virtual Package *getOnePackage(BYTE * package, size_t dataSize);
 };
 
-class EchoProtocol:public Protocol{
+class EchoPackage : public Package{
+public:
+    typedef struct ECHO_HEADER_t{
+        uint8_t     identity;   //0x7E
+        uint16_t    length;     //两个字节
+    }__attribute__((packed)) ECHO_HEADER_t;
+
+    EchoPackage(void *payload, size_t length);
+    ~EchoPackage();
+
+private:
+    ECHO_HEADER_t   *header;
+    uint16_t        data_length;
+};
+
+class EchoProtocol : public Protocol{
 public:
     explicit EchoProtocol(ProtocolEventHandler *headler=nullptr):
         Protocol(headler){};
