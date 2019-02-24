@@ -133,7 +133,7 @@ EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos,
     if(header->identity == 0x7E){
         framePos = 0;
         readWant = 0;
-        frameSize = length + sizeof(EchoPackage::ECHO_HEADER_t) + 1;
+        frameSize = length + sizeof(EchoPackage::ECHO_HEADER_t);
         return true;
     }else{
         return false;

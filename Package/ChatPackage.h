@@ -90,7 +90,10 @@ public:
     virtual void debug() const override{
         LOG_DEBUG("echo package debug\n");
         uint8_t *tmp_ptr = (uint8_t *)Package::getRawData();
-        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)(tmp_ptr + 4), data_length).c_str());
+        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)(tmp_ptr + sizeof(ECHO_HEADER_t)), data_length).c_str());
+        std::string innerdata;
+        innerdata.append((char *)(tmp_ptr + sizeof(ECHO_HEADER_t)),data_length);
+        LOG_DEBUG("inner data [%s]\n",innerdata.c_str());
     }
 
 private:
