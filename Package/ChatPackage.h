@@ -89,6 +89,7 @@ public:
 
     virtual void debug() const override{
         LOG_DEBUG("echo package debug\n");
+        std::string data;
     }
 
 private:

@@ -175,7 +175,7 @@ TConnection::read_request(){
         }
     }
     // LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
-    evbuffer_drain(input, frameSize_);
+    evbuffer_drain(input, frameSize_+1);
     // The application is now on the task to finish
     appstate = AppState::APP_INIT;
     transition();
@@ -244,7 +244,6 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
 {
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
-    LOG_DEBUG("\n第一次触发 read callback\n");
     conn->workSocket();
 }
 
@@ -274,18 +273,18 @@ TConnection::workSocket(){
 void
 TConnection::recv_framing(){
     struct evbuffer *input = bufferevent_get_input(bev);
-    LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
+    // LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
     struct evbuffer_iovec image;
     int ret = evbuffer_peek(input, -1, NULL, &image, 1);
     if (ret){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
-        // LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+        LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
-            // LOG_DEBUG("parse one package true\n");
+            LOG_DEBUG("parse one package true\n");
             if(framePos > 0){
                 LOG_DEBUG("frame position [%d] greater than zero\n",framePos);
                 evbuffer_drain(input,framePos);

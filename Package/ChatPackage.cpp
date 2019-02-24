@@ -141,6 +141,7 @@ EchoProtocol::getOnePackage(BYTE * package, size_t dataSize){
     size_t framePos,frameSize,readWant = 0;
     if(parseOnePackage(package,dataSize,framePos,frameSize,readWant)){
         if(frameSize<=dataSize && framePos==0 && readWant==0 ){
+            LOG_DEBUG("构造 echo package 的 frameSize [%d]\n",frameSize);
             return new EchoPackage(package,frameSize);
         }
     }
