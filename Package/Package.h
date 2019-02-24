@@ -1,6 +1,7 @@
 #ifndef WANJUN_PACKAGE
 #define WANJUN_PACKAGE
 
+#include "../log.h"
 #include <stdint.h>
 #include <string>
 #include <memory>
@@ -31,7 +32,9 @@ public:
         return (0==rawDataLength);
     }
 
-    virtual void debug() const{ }
+    virtual void debug() const{
+        LOG_DEBUG("package debug\n");
+    }
 
 protected:
     std::string rawData;

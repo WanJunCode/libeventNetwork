@@ -36,6 +36,10 @@ public:
     ChatPackage(void *payload, size_t length);
     ChatPackage(CRYPT_TYPE crypt, DATA_TYPE TYPE, void *payload, size_t length);
     ~ChatPackage(){};
+
+    virtual void debug() const override{
+        LOG_DEBUG("chat package debug\n");
+    }
 public:
     // 判断 payload 指针指向的内存区域是否是一个完整的数据包
     static bool isOnePackage(void *payload, size_t length,size_t& frame,size_t& want);
@@ -82,6 +86,10 @@ public:
 
     EchoPackage(void *payload, size_t length);
     ~EchoPackage();
+
+    virtual void debug() const override{
+        LOG_DEBUG("echo package debug\n");
+    }
 
 private:
     ECHO_HEADER_t   *header;

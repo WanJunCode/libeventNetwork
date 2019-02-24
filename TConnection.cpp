@@ -104,16 +104,16 @@ TConnection::transition()
 {
     static int deep = 0;
     deep++;
-    LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
+    // LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
     switch(appstate){
         case AppState::TRANS_INIT:
-            LOG_DEBUG("trans init\n");
+            // LOG_DEBUG("trans init\n");
             appstate = AppState::APP_INIT;
             bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
             transition();
             break;
         case AppState::APP_INIT:
-            LOG_DEBUG("app init\n");
+            // LOG_DEBUG("app init\n");
             socketState = SocketState::SOCKET_RECV_FRAMING;
             appstate = AppState::APP_READ_FRAME_SIZE;
             bufferevent_setwatermark(bev, EV_READ, 0, maxBufferSize_);
@@ -121,7 +121,7 @@ TConnection::transition()
             workSocket();
             break;
         case AppState::APP_READ_FRAME_SIZE:
-            LOG_DEBUG("app read frame size\n");
+            // LOG_DEBUG("app read frame size\n");
             // 已经读取到了一个完整的数据包的大小
             // Move into read request state
             if (0==readWant_) {
@@ -145,9 +145,9 @@ TConnection::transition()
             LOG_DEBUG("Unexpect application state!");
             return;
     }
-    LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
+    // LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
     deep--;
-    LOG_DEBUG("TConnection transport ...离开\n");
+    // LOG_DEBUG("TConnection transport ...离开\n");
 }
 
 void 
@@ -168,13 +168,13 @@ TConnection::read_request(){
             LOG_DEBUG("construct TPackage failure 数据包构造失败\n");
         } else {
             // 是否是线程池处理
-            ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
-            record((ChatPackage *)(pkg));
+            // ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
+            // record((ChatPackage *)(pkg));
+            pkg->debug();
             delete pkg;
-            // pkg 处理完后需要删除
         }
     }
-    LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
+    // LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
     evbuffer_drain(input, frameSize_);
     // The application is now on the task to finish
     appstate = AppState::APP_INIT;
@@ -244,7 +244,7 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
 {
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
-    LOG_DEBUG("第一次触发 read callback\n");
+    LOG_DEBUG("\n第一次触发 read callback\n");
     conn->workSocket();
 }
 
@@ -259,7 +259,7 @@ void
 TConnection::workSocket(){
     switch(socketState){
         case SocketState::SOCKET_RECV_FRAMING:
-            LOG_DEBUG("SocketState::SOCKET_RECV_FRAMING   开始接受数据\n");
+            // LOG_DEBUG("SocketState::SOCKET_RECV_FRAMING   开始接受数据\n");
             recv_framing();
             break;
         case SocketState::SOCKET_RECV:
@@ -268,6 +268,7 @@ TConnection::workSocket(){
         default:
             break;
     }
+    LOG_DEBUG("Work Socket end\n");
 }
 
 void
@@ -280,11 +281,11 @@ TConnection::recv_framing(){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
-        LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+        // LOG_DEBUG("Recv RawData:[%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
-            LOG_DEBUG("parse one package true\n");
+            // LOG_DEBUG("parse one package true\n");
             if(framePos > 0){
                 LOG_DEBUG("frame position [%d] greater than zero\n",framePos);
                 evbuffer_drain(input,framePos);
@@ -302,7 +303,5 @@ TConnection::recv_framing(){
     } else {
         LOG_DEBUG("evbuffer_peek 失败\n");
     }
-    // 从　input 缓冲区中丢弃　　image.iov_len 长度的数据
-    // evbuffer_drain(input, image.iov_len);
-    LOG_DEBUG("after read input length = %lu\n", evbuffer_get_length(input));
+    // LOG_DEBUG("recv framing end\n");
 }

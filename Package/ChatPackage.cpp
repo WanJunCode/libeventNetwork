@@ -125,13 +125,11 @@ bool
 EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant){
     BYTE *ptr=package;
     EchoPackage::ECHO_HEADER_t *header = (EchoPackage::ECHO_HEADER_t *)ptr;
-    uint16_t datasize = ntohs(header->length);
+    uint16_t length = ntohs(header->length);
     if(header->identity == 0x7E){
-        LOG_DEBUG("ECHO protocol get ace protocol header\n");
-        LOG_DEBUG("data size = [%d]\n",datasize);
         framePos = 0;
         readWant = 0;
-        frameSize = dataSize + sizeof(EchoPackage::ECHO_HEADER_t);
+        frameSize = length + sizeof(EchoPackage::ECHO_HEADER_t);
         return true;
     }else{
         return false;
@@ -140,11 +138,11 @@ EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos,
 
 Package *
 EchoProtocol::getOnePackage(BYTE * package, size_t dataSize){
-    // size_t framePos,frameSize,readWant = 0;
-    // if(parseOnePackage(package,dataSize,framePos,frameSize,readWant)){
-    //     if(frameSize<=dataSize && framePos==0 && readWant==0 ){
-    //         return new ChatPackage(package,frameSize);
-    //     }
-    // }
+    size_t framePos,frameSize,readWant = 0;
+    if(parseOnePackage(package,dataSize,framePos,frameSize,readWant)){
+        if(frameSize<=dataSize && framePos==0 && readWant==0 ){
+            return new EchoPackage(package,frameSize);
+        }
+    }
     return nullptr;
 }
