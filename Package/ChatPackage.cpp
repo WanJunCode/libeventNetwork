@@ -114,6 +114,10 @@ ChatProtocol::getOnePackage(BYTE * package, size_t dataSize){
 
 EchoPackage::EchoPackage(void *payload, size_t length)
     :Package(payload,length){
+    BYTE *ptr = (BYTE *)payload;
+    EchoPackage::ECHO_HEADER_t *header = (EchoPackage::ECHO_HEADER_t *)ptr;
+    data_length = ntohs(header->length);
+
 }
 
 EchoPackage::~EchoPackage(){
@@ -129,7 +133,7 @@ EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos,
     if(header->identity == 0x7E){
         framePos = 0;
         readWant = 0;
-        frameSize = length + sizeof(EchoPackage::ECHO_HEADER_t);
+        frameSize = length + sizeof(EchoPackage::ECHO_HEADER_t) + 1;
         return true;
     }else{
         return false;

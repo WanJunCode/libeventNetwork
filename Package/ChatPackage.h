@@ -89,7 +89,8 @@ public:
 
     virtual void debug() const override{
         LOG_DEBUG("echo package debug\n");
-        std::string data;
+        uint8_t *tmp_ptr = (uint8_t *)Package::getRawData();
+        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)(tmp_ptr + 4), data_length).c_str());
     }
 
 private:

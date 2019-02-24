@@ -78,6 +78,7 @@ public:
     virtual BYTE *serialize(Package *package) {
         return (BYTE *)package->getRawData();
     }
+    
     //反序列化数据
     virtual Package * deserialize(Package *package) {
         return package;
