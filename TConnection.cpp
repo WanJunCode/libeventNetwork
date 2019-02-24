@@ -170,7 +170,10 @@ TConnection::read_request(){
             // 是否是线程池处理
             // ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
             // record((ChatPackage *)(pkg));
+
             pkg->debug();
+            // 使用 grpc 函数
+            server_->grpcMethod(pkg->innerData());
             delete pkg;
         }
     }

@@ -36,6 +36,10 @@ public:
         LOG_DEBUG("package debug\n");
     }
 
+    virtual std::string innerData() {
+        return "";
+    }
+
 protected:
     std::string rawData;
     std::string factoryCode;

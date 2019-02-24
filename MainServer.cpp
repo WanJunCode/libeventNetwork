@@ -40,11 +40,36 @@ MainServer::MainServer()
     protocol->addProtocol(std::make_shared<ChatProtocol>());
     protocol->addProtocol(std::make_shared<EchoProtocol>());
 
+
+// grpc initialize
+    grpc::ChannelArguments args;
+    std::vector<
+    std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>>
+    interceptor_creators;
+    interceptor_creators.push_back(std::unique_ptr<CachingInterceptorFactory>(
+        new CachingInterceptorFactory()));
+    auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
+      "localhost:50051", grpc::InsecureChannelCredentials(), args,
+      std::move(interceptor_creators));
+    
+    grpcClient = new KeyValueStoreClient(channel);
+}
+
+void 
+MainServer::grpcMethod(std::string msg){
+    std::vector<std::string> keys { msg };
+    if(grpcClient){
+        grpcClient->GetValues(keys);
+    }
 }
 
 MainServer::~MainServer()
 {
     LOG_DEBUG("main server destructure ...\n");
+
+// clean up grpc
+    delete grpcClient;
+
     if (transport_ != NULL)
     {
         delete transport_;
