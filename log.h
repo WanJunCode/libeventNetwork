@@ -10,6 +10,8 @@
 #include <mutex>
 #include <pthread.h>
 #include "Tool.h"           // vform
+
+// for log4cpp
 #include <log4cpp/Category.hh>
 #include <log4cpp/FileAppender.hh>
 #include <log4cpp/PatternLayout.hh>
@@ -20,24 +22,24 @@
 
 #define LOG_DEBUG(fmt,...) \
     Log::getInstance().printf(pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
-    // Log::getInstance().printf_w(" tid:[%lu]\t[%s]\t[%d]\t[%s] :\t",pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__);\
-    // Log::getInstance().printf_w_notime(fmt, ##__VA_ARGS__);\
-
 
 class Log{
 public:
+    // 单例模式, 静态函数只能访问 静态类成员
+    static Log& getInstance(){
+        return root_log;
+    }
+    static Log root_log;
+
     Log();
     ~Log();
 
     template<typename T>
     Log& operator << (const T&);
+
     void printf_w(const char *cmd, ...);
     void printf_w_notime(const char *cmd, ...);
     void printf(unsigned long pthread_id,const std::string filename,int line,const std::string function,const char *cmd,...);
-
-    // 单例模式
-    static Log& getInstance();
-    static Log root_log;
 
 private:
     std::ofstream out;

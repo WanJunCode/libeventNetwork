@@ -33,13 +33,7 @@ Log::~Log(){
     out.close();
 }
 
-Log& Log::getInstance(){
-    return root_log;
-}
-
 void Log::printf_w(const char *cmd, ...){
-    // unique_lock ＆　lock_guard 区别
-	// std::unique_lock<std::mutex> lock(mutex_);
     std::lock_guard<std::mutex> lock(mutex_);
 
     time_t tt = time(NULL);//这句返回的只是一个时间cuo
@@ -62,8 +56,12 @@ void Log::printf(unsigned long pthread_id,const std::string filename,int line,co
     time_t tt = time(NULL);//这句返回的只是一个时间戳
     struct tm* t= localtime(&tt);
     char timeStr[150]={0};
-    // string printf
+
+#ifdef THREAD_ID
     sprintf(timeStr,"tid:[%lu]\t[%s]\t[%d]\t[%s] :\t[%02d:%02d:%02d]",pthread_id,filename.c_str(),line,function.c_str(),t->tm_hour,t->tm_min,t->tm_sec);
+#else
+    sprintf(timeStr,"[%s][%d]\t[%s] :\t[%02d:%02d:%02d]:",filename.c_str(),line,function.c_str(),t->tm_hour,t->tm_min,t->tm_sec);    
+#endif
     va_list args;       //定义一个va_list类型的变量，用来储存单个参数
     va_start(args,cmd); //使args指向可变参数的第一个参数
     

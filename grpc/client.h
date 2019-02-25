@@ -15,14 +15,11 @@
  * limitations under the License.
  *
  */
-
 #pragma once
-
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-
 #include <grpcpp/grpcpp.h>
 
 #include "caching_interceptor.h"
