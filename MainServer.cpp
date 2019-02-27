@@ -11,88 +11,50 @@
 #include "Package/ChatPackage.h"
 
 #define MAXBUFFERSIZE (1024*16*16)
+
 typedef unsigned char BYTE;
-
-MainServer::MainServer()
-    :port_(PORT),
-    selectIOThread(0),
-    maxBufferSize(MAXBUFFERSIZE)            // 定义　bufferevent　最大的水位
+MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize)
+    :port_(port),
+    selectIOThread_(0),
+    maxBufferSize_(MAXBUFFERSIZE),            // 定义　bufferevent　最大的水位
+    threadPoolSize_(poolSize),
+    iothreadSize_(iothreadSize)
 {
-    LOG_DEBUG("main server structure ...\n");
     main_base = event_base_new();
-    transport_ = new MyTransport(this);
-    thread_pools = new ThreadPool(POOL_SIZE);
+    if(main_base == NULL){
+        LOG_DEBUG("main event base new failure ...\n");
+    }
+    transport_ = make_shared<MyTransport>(this);
+    thread_pool = make_shared<ThreadPool>(POOL_SIZE);
 
-    for(int i=0;i<IOTHREAD_SIZE;i++){
+    for(int i=0;i<iothreadSize_;i++){
         // 使用智能指针，在析构函数中不再需要手动析构
         iothreads_.push_back(std::make_shared<IOThread>(this));
     }
     
     // 开启 iothread loop
-    for(int i=0;i<IOTHREAD_SIZE;i++){
-        thread_pools->enqueue(std::ref(*iothreads_[i]));
+    for(int i=0;i<iothreadSize_;i++){
+        thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
 
     redis_pool = make_shared<RedisPool>("127.0.0.1",6379,"",100,5);
-    thread_pools->enqueue(std::ref(*redis_pool));
+    thread_pool->enqueue(std::ref(*redis_pool));
 
-    protocol = new MultipleProtocol();
-    protocol->addProtocol(std::make_shared<ChatProtocol>());
-    protocol->addProtocol(std::make_shared<EchoProtocol>());
+    protocol_ = make_shared<MultipleProtocol>();
+    protocol_->addProtocol(std::make_shared<ChatProtocol>());
+    protocol_->addProtocol(std::make_shared<EchoProtocol>());
 
-
-#ifdef GRPC
-// grpc initialize
-    grpc::ChannelArguments args;
-    std::vector<
-    std::unique_ptr<grpc::experimental::ClientInterceptorFactoryInterface>>
-    interceptor_creators;
-    interceptor_creators.push_back(std::unique_ptr<CachingInterceptorFactory>(
-        new CachingInterceptorFactory()));
-    auto channel = grpc::experimental::CreateCustomChannelWithInterceptors(
-      "localhost:50051", grpc::InsecureChannelCredentials(), args,
-      std::move(interceptor_creators));
-    
-    grpcClient = new KeyValueStoreClient(channel);
-#endif
 }
-
-#ifdef GRPC
-void 
-MainServer::grpcMethod(std::string msg){
-    std::vector<std::string> keys { msg };
-    if(grpcClient){
-        grpcClient->GetValues(keys);
-    }
-}
-#endif
 
 MainServer::~MainServer()
 {
     LOG_DEBUG("main server destructure ...\n");
-
-#ifdef GRPC
-// clean up grpc
-    delete grpcClient;
-#endif
-
-    if (transport_ != NULL)
-    {
-        delete transport_;
-        transport_ = NULL;
-    }
 
     for(int i=0;i<iothreads_.size();i++){
         iothreads_[i]->breakLoop(false);
     }
 
     redis_pool->exit();
-
-    if(thread_pools != NULL)
-    {
-        delete thread_pools;
-        thread_pools = NULL;
-    }
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
     for (int i = 0; i < activeTConnection.size(); i++)
@@ -108,8 +70,7 @@ MainServer::~MainServer()
         delete conn;
     }
 
-    delete protocol;
-    event_free(ev_stdin);
+    // event_free(ev_stdin);
     // 释放 mainserver 的 eventbase
     event_base_free(main_base);
 }
@@ -118,7 +79,7 @@ void MainServer::serve()
 {
     LOG_DEBUG("serve() ... start \n");
     // 添加一个 控制台输入事件
-    ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdin_cb, this);
+    ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdinCallBack, this);
     event_add(ev_stdin, NULL);
 
     transport_->listen(PORT);
@@ -142,11 +103,11 @@ void MainServer::handlerConn(void *args)
         std::lock_guard<std::mutex> locker(connMutex);
         if (connectionQueue.empty())
         {
-            selectIOThread = selectIOThread % IOTHREAD_SIZE;
-            LOG_DEBUG("select iothread num： [%d]\n",selectIOThread++);
+            selectIOThread_ = selectIOThread_ % IOTHREAD_SIZE;
+            LOG_DEBUG("select iothread num： [%d]\n",selectIOThread_++);
 
             // 选择 iothread 创建 TConnection
-            conn = new TConnection(sock, iothreads_[selectIOThread].get());
+            conn = new TConnection(sock, iothreads_[selectIOThread_].get());
             LOG_DEBUG("新建一个 TConnection \n");
         }
         else
@@ -192,17 +153,7 @@ void MainServer::returnTConnection(TConnection *conn)
     LOG_DEBUG("main server 回收 TConnection end ...\n");
 }
 
-struct event_base *MainServer::getBase()
-{
-    return main_base;
-}
-
-ThreadPool *MainServer::getPool(){
-    return thread_pools;
-}
-
-
-void MainServer::stdin_cb(evutil_socket_t stdin_fd, short what, void *args)
+void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args)
 {
     MainServer *server = static_cast<MainServer *>(args);
     char recvline[80];

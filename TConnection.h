@@ -56,6 +56,8 @@ public:
     void recv_framing();
     void recv();
 
+    void chishenme(std::string msg);
+
 private:
     void read_request();
 public:

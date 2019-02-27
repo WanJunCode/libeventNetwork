@@ -4,7 +4,6 @@
 #include "Package.h"
 #include <assert.h>
 #include "../log.h"
-#include "../grpc/client.h"
 
 class ChatPackage:public Package{
 public:

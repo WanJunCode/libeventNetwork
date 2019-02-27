@@ -2,8 +2,19 @@
 #include "log.h"
 #include <string.h>
 #include "Package/ChatPackage.h"
-
+#include <vector>
+#include <stdlib.h>
 typedef unsigned char BYTE;
+
+void TConnection::chishenme(std::string msg){
+    static std::vector<std::string> menu = {"浓汁烧","烧鹅饭","煲仔饭","五谷鱼粉","排骨饭","螺蛳粉","粗粮面","黄焖鸡","混沌"};
+    srand(time(NULL));
+    int idx = rand()%(menu.size());
+    if( msg == "E59083E4BB80E4B988E59083E4BB80E4B988"){
+        LOG_DEBUG("吃什么？？？ idx = [%d] \n",idx);
+        send(socket_->getSocketFD(),menu[idx].data(),menu[idx].length(),0);
+    }
+}
 
 TConnection::TConnection(TSocket *sock, MainServer *server)
     : socket_(sock),
@@ -289,6 +300,9 @@ TConnection::recv_framing(){
         size_t framePos = 0;
 
         LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+        
+        // 
+        chishenme(byteTohex((void *)tmp_ptr, image.iov_len));
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);

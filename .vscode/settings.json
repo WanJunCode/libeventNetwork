@@ -51,6 +51,9 @@
         "list": "cpp",
         "algorithm": "cpp",
         "__config": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "unordered_set": "cpp"
     }
 }
