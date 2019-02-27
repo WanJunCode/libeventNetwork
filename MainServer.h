@@ -33,7 +33,7 @@ public:
   void serve();
   void handlerConn(void *args);
   void returnTConnection(TConnection *conn);
-  bool isActive(TConnection *conn);
+  bool isActive(TConnection *conn) const;
 
   std::shared_ptr<ThreadPool> getPool(){
     return thread_pool;
@@ -44,11 +44,11 @@ public:
   struct event_base *getBase(){
     return main_base;
   }
-  inline int getBufferSize() const{
-    return maxBufferSize_;
-  }
   inline Redis *getRedis(){
     return redis_pool->grabCedis();
+  }
+  inline int getBufferSize() const{
+    return maxBufferSize_;
   }
 
 private:
