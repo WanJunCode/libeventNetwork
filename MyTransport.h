@@ -1,8 +1,6 @@
 #ifndef __WJ_MYTRANSPORT_H__
 #define __WJ_MYTRANSPORT_H__
 
-#include "MainServer.h"
-#include "TSocket.h"
 #include <event2/listener.h>
 #include <event.h>
 #include <map>

@@ -9,18 +9,17 @@
 #include <arpa/inet.h>
 #include <assert.h>
 
+#include "MainServer.h"
+#include "TSocket.h"
 #include "log.h"
 
 MyTransport::MyTransport(MainServer *server)
     : server_(server)
 {
-    LOG_DEBUG("transport structure ...\n");
 }
 
 MyTransport::~MyTransport()
 {
-    LOG_DEBUG("transport destructure ...\n");
-
     if (listener_ != NULL)
     {
         evconnlistener_free(listener_);
@@ -46,20 +45,20 @@ void MyTransport::listen(int port)
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
 
-    LOG_DEBUG("new listener ...\n");
+    // reuseable  &&  close_on_free
     listener_ = evconnlistener_new_bind(server_->getBase(), do_accept, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, 
         10, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
-    if (!listener_)
-    {
+    if (!listener_){
         perror("create listener error...\n");
         assert(0);
     }
 
-    // 设置 listen fd 为 nonblocking  reuseable
-    evutil_socket_t listener_fd = evconnlistener_get_fd(listener_);
-    evutil_make_socket_nonblocking(listener_fd);
-    evutil_make_listen_socket_reuseable(listener_fd);
+    // 设置 listen fd 为 nonblocking 
+    if(0 != evutil_make_socket_nonblocking(evconnlistener_get_fd(listener_))){
+        LOG_DEBUG("faliure to make listener socket nonblocking\n");
+    }
+    // evutil_make_listen_socket_reuseable(listener_fd);
 }
 
 TSocket *MyTransport::accept()
@@ -111,21 +110,16 @@ void MyTransport::returnTSocket(TSocket *sock)
         // 从 active map 中删除
         std::lock_guard<std::mutex> locker(connMutex_);
         auto iter = activeSocket.find(sock->getSocketFD());
-        if (iter != activeSocket.end())
-        {
+        if (iter != activeSocket.end()){
             LOG_DEBUG("active socket map erase sock [%d]\n",iter->first);
             activeSocket.erase(iter);
-        }
-        else
-        {
+        }else{
             LOG_DEBUG("activeSocket 中没找到...\n");
         }
         
         // 关闭回收的TSocket连接
         sock->close();
         socketQueue.push(sock);
-
-        // end locker
     }
 }
 
