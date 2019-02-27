@@ -172,8 +172,13 @@ TConnection::read_request(){
             // record((ChatPackage *)(pkg));
 
             pkg->debug();
-            // 使用 grpc 函数
+            auto m = pkg->innerData();            
+            auto length = send(socket_->getSocketFD(), m.c_str() , m.length() ,0);
+            LOG_DEBUG("buffer [%s] strlenbuffer [%d] length = [%d]\n",m.data(), m.length() ,length);
+
+#ifdef GRPC
             server_->grpcMethod(pkg->innerData());
+#endif
             delete pkg;
         }
     }

@@ -41,6 +41,7 @@ MainServer::MainServer()
     protocol->addProtocol(std::make_shared<EchoProtocol>());
 
 
+#ifdef GRPC
 // grpc initialize
     grpc::ChannelArguments args;
     std::vector<
@@ -53,8 +54,10 @@ MainServer::MainServer()
       std::move(interceptor_creators));
     
     grpcClient = new KeyValueStoreClient(channel);
+#endif
 }
 
+#ifdef GRPC
 void 
 MainServer::grpcMethod(std::string msg){
     std::vector<std::string> keys { msg };
@@ -62,13 +65,16 @@ MainServer::grpcMethod(std::string msg){
         grpcClient->GetValues(keys);
     }
 }
+#endif
 
 MainServer::~MainServer()
 {
     LOG_DEBUG("main server destructure ...\n");
 
+#ifdef GRPC
 // clean up grpc
     delete grpcClient;
+#endif
 
     if (transport_ != NULL)
     {

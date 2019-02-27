@@ -8,7 +8,8 @@
 #include "IOThread.h"
 #include "Cedis/RedisPool.h"
 #include "Package/MultipleProtocol.h"
-#include "grpc/client.h"
+
+// #include "grpc/client.h"
 
 #include <event.h>
 #include <vector>
@@ -51,10 +52,14 @@ public:
     return protocol;
   }
 
+#ifdef GRPC
+public:
   void grpcMethod(std::string msg);
-
 private:
   KeyValueStoreClient *grpcClient;
+#endif
+
+private:
   struct event_base *main_base;
   struct event *ev_stdin;     // 处理命令行输入
   
