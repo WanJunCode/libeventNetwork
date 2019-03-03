@@ -15,3 +15,6 @@ all:
 
 clean:
 	rm -rf $(BIN) $(OUTPUT) vgcore* core
+
+start:
+	./$(BIN)/$(EXECUTABLE)
