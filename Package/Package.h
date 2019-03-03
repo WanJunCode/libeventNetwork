@@ -1,7 +1,9 @@
 #ifndef WANJUN_PACKAGE
 #define WANJUN_PACKAGE
 
-#include "../log.h"
+#include "../main/log.h"
+#include "../System/config.h"
+
 #include <stdint.h>
 #include <string>
 #include <memory>
@@ -17,6 +19,10 @@ public:
         rawDataLength(buf_len){
         // std::string.append( ... )
         rawData.append((char*)buf,buf_len);
+    }
+
+    virtual ~Package(){
+        
     }
 
     inline size_t getRawDataLength() const{
@@ -77,7 +83,9 @@ public:
     virtual Package *getOnePackage(BYTE * package, size_t dataSize) = 0;
 
     // 虚函数有自己的实现，子类可以不覆盖该函数
-    virtual void addProtocol(std::shared_ptr<Protocol> protocol) { }
+    virtual void addProtocol(std::shared_ptr<Protocol> protocol) {
+        UNUSED(protocol);
+    }
 
     virtual BYTE *serialize(Package *package) {
         return (BYTE *)package->getRawData();

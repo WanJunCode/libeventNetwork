@@ -54,9 +54,9 @@ ChatPackage::ChatPackage(CRYPT_TYPE crypt, DATA_TYPE type, void *payload, size_t
 bool 
 ChatPackage::isOnePackage(void *payload, size_t length, size_t& frame, size_t& want){
     CHAT_HEADER_t *header = (CHAT_HEADER_t *)payload;
-    int datasize = ntohs(header->length);
-    if( header->identify==0x7A && datasize>CHAT_LENGTH){
-        if(length>=datasize){
+    uint16_t datasize = ntohs(header->length);
+    if( header->identify==0x7A && datasize > CHAT_LENGTH){
+        if(length >= datasize){
             CHAT_TAIL_t *tailer = (CHAT_TAIL_t *)( (uint8_t*)header + (datasize - sizeof(CHAT_TAIL_t)) ); 
             if(tailer->tail==0x7B && tailer->crc==crc16((unsigned char *)header,(datasize-sizeof(CHAT_TAIL_t)))){
                 frame = datasize;
@@ -82,7 +82,7 @@ ChatProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos,
     if(dataSize>=CHAT_LENGTH){
         // ptr 记录　数据包开始位置
         BYTE *ptr=package;
-        for(int i=0;i<dataSize;++i){
+        for(size_t i=0;i<dataSize;++i){
             if(ChatPackage::isOnePackage(package,dataSize,frameSize,readWant)){
                 if(readWant==0){
                     // 完整的数据包
@@ -127,6 +127,7 @@ EchoPackage::~EchoPackage(){
 // framePos  frameSize  readWant
 bool
 EchoProtocol::parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant){
+    UNUSED(dataSize);
     BYTE *ptr=package;
     EchoPackage::ECHO_HEADER_t *header = (EchoPackage::ECHO_HEADER_t *)ptr;
     uint16_t length = ntohs(header->length);

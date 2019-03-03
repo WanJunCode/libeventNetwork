@@ -2,7 +2,8 @@
 #include <algorithm>
 #include <hiredis/hiredis.h>
 #include <atomic>
-#include "../log.h"
+
+#include "../main/log.h"
 
 RedisPool::RedisPool(	std::string server,
                 		unsigned int port,

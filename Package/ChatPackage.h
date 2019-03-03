@@ -3,7 +3,7 @@
 
 #include "Package.h"
 #include <assert.h>
-#include "../log.h"
+#include "../main/log.h"
 
 class ChatPackage:public Package{
 public:

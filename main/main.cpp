@@ -1,8 +1,11 @@
 #include "MainServer.h"
 #include "MainConfig.h"
-#include "Signal/PosixSignal.h"
+#include "../Signal/PosixSignal.h"
+#include "../System/config.h"
 
 int main(int argc, char const *argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
     PosixSignal::register_signals();
     MainConfig config(CONFIG_PATH);
     MainServer server;

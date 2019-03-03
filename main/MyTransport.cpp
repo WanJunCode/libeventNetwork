@@ -1,4 +1,5 @@
 #include "MyTransport.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -73,6 +74,9 @@ TSocket *MyTransport::accept()
 void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t client_fd,
                             struct sockaddr *addr, int socklen, void *args)
 {
+    UNUSED(listener);
+    UNUSED(addr);
+    UNUSED(socklen);
     LOG_DEBUG("new client connection [%d]...\n", client_fd);
     MyTransport *transport = (MyTransport *)args;
     {

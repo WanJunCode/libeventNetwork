@@ -10,6 +10,7 @@
 #include <mutex>
 #include <pthread.h>
 #include "Tool.h"           // vform
+#include "../System/config.h"
 
 // for log4cpp
 #include <log4cpp/Category.hh>
@@ -18,7 +19,7 @@
 #include <log4cpp/PropertyConfigurator.hh>
 #include <log4cpp/CategoryStream.hh>
 
-#define LOG_FILE "log_file.out"
+#define LOG_FILE "output/log_file.out"
 
 #define LOG_DEBUG(fmt,...) \
     Log::getInstance().printf(pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
@@ -50,6 +51,7 @@ private:
 template<typename T>
 Log& Log::operator << (const T& data){
     out<<data<<std::flush;
+    return *this;
 }
 
 #endif // !WANJUN_LOG_H

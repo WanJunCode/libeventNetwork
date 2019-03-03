@@ -1,10 +1,17 @@
-vpath %.h
-all_name=$(shell find -iname "*.cpp")
+ALL_CPP=$(shell find -iname "*.cpp")
 
-other='-L/usr/local/lib `pkg-config --libs protobuf grpc++ grpc` -Wl,--no-as-needed -lgrpc++_reflection -Wl,--as-needed -ldl'
+grpc_lib = -L/usr/local/lib `pkg-config --libs protobuf grpc++ grpc` -Wl,--no-as-needed -lgrpc++_reflection -Wl,--as-needed -ldl
+
+BIN = bin
+OUTPUT = output
+EXECUTABLE = wj-server
+CXX = g++
+C_FLAGS := -std=c++11 -Wall -Wextra -g
+LIB := -levent -pthread -lhiredis -ljsoncpp -llog4cpp
 
 all:
-	g++ $(all_name) -g -o wj-server -std=c++11 -levent -pthread -lhiredis -ljsoncpp -llog4cpp
+	mkdir -p $(BIN) && mkdir -p $(OUTPUT)
+	$(CXX) $(C_FLAGS) $(ALL_CPP) -o $(BIN)/$(EXECUTABLE) $(LIB)
 
 clean:
-	rm -f wj-server core log_file.out test_log4cpp1.log vgcore*
+	rm -rf $(BIN) $(OUTPUT) vgcore* core

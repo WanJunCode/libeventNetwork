@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <memory>
-
+#include "../System/config.h"
 Log Log::root_log;
 
 Log::Log():
@@ -19,7 +19,7 @@ Log::Log():
 
     log4cpp::PatternLayout* pLayout = new log4cpp::PatternLayout();
     pLayout->setConversionPattern("%d: %p %c %x: %m%n");
-    log4cpp::Appender* appender = new log4cpp::FileAppender("FileAppender","./test_log4cpp1.log");
+    log4cpp::Appender* appender = new log4cpp::FileAppender("FileAppender","output/test_log4cpp1.log");
     appender->setLayout(pLayout);
     root.setAppender(appender);
     // Category 需要设置 priority 优先级
@@ -51,6 +51,7 @@ void Log::printf_w(const char *cmd, ...){
 
 void Log::printf(unsigned long pthread_id,const std::string filename,int line,const std::string function,const char *cmd,...)
 {
+    UNUSED(pthread_id);
     std::unique_lock<std::mutex> lock(mutex_);
 
     time_t tt = time(NULL);//这句返回的只是一个时间戳

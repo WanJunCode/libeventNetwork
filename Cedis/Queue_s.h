@@ -7,7 +7,7 @@
 #include <algorithm>    // std::sort, std::includes
 #include <mutex>
 #include <condition_variable>
-
+#include "../System/config.h"
 // base         std::queue
 // derived      Queue_s
 
@@ -52,6 +52,7 @@ void Queue_s<T, Sequence>::pop() {
 
 template <class T, class Sequence>
 T Queue_s<T, Sequence>::pop_front(bool &bstat, double seconds) {
+    UNUSED(seconds);
     std::unique_lock<std::mutex> locker(mutex_);
     if (std::queue<T, Sequence>::empty())
         condition_.wait(locker);

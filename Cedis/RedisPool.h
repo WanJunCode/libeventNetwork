@@ -55,13 +55,14 @@ public:
     }
 
 private:
-    volatile bool           stop;
     std::mutex              mutex_;             // 锁
+
     std::string             server_;            // 服务器ip地址
     unsigned int            port_;              // 端口
     std::string             password_;          // 密码
     unsigned int            conns_max_;         // 连接数量
     unsigned int            conns_min_;         // 连接数量
+    volatile bool           stop;
 
     std::vector<Redis *>    redis_vec;          // 保存所有取出的 Redis::ptr_t 连接的Vector
     Queue_s<Redis *>        queue;              // 不可用的cedis连接

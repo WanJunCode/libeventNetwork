@@ -1,11 +1,12 @@
 #include "IOThread.h"
-#include <stdio.h>
 #include "log.h"
 
 #include "TSocket.h"
 #include "MyTransport.h"
 #include "TConnection.h"
+#include "MainServer.h"
 
+#include <stdio.h>
 #include <unistd.h>
 #include <chrono>
 #include <thread>
@@ -13,7 +14,6 @@
 #include <event2/event.h>
 #include <sys/select.h>
 #include <assert.h>
-#include "MainServer.h"
 
 #ifndef SOCKOPT_CAST_T
 #ifndef _WIN32

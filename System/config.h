@@ -8,6 +8,8 @@ typedef unsigned char BYTE;
 #include <assert.h>
 #include <errno.h>
 
+
+#define UNUSED(x) (void)(x)
 #ifdef CHECK_PTHREAD_RETURN_VALUE
 
 #ifdef NDEBUG

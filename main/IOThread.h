@@ -41,9 +41,9 @@ public:
 private:
     static void notifyHandler(evutil_socket_t fd, short which, void* v);
 
+    struct event_base *base_;
     MainServer *server_;
     unsigned long threadId_;
-    struct event_base *base_;
     evutil_socket_t notificationPipeFDs_[2];
     struct event notificationEvent_;            // 管道通知事件
 };

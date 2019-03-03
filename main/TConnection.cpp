@@ -1,7 +1,8 @@
 #include "TConnection.h"
 #include "log.h"
+#include "../Package/ChatPackage.h"
+
 #include <string.h>
-#include "Package/ChatPackage.h"
 #include <vector>
 #include <stdlib.h>
 typedef unsigned char BYTE;
@@ -245,6 +246,8 @@ TConnection::notify(){
 // static
 void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 {
+    UNUSED(bev);
+
     // client disconnection
     TConnection *conn = (TConnection *)args;
 
@@ -261,6 +264,8 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 // static
 void TConnection::read_cb(struct bufferevent *bev, void *args)
 {
+    UNUSED(bev);
+
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
     conn->workSocket();

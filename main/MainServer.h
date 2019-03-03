@@ -6,8 +6,8 @@
 #include "TConnection.h"
 #include "ThreadPool.h"
 #include "IOThread.h"
-#include "Cedis/RedisPool.h"
-#include "Package/MultipleProtocol.h"
+#include "../Cedis/RedisPool.h"
+#include "../Package/MultipleProtocol.h"
 
 // #include "grpc/client.h"
 
@@ -56,10 +56,10 @@ private:
   struct event_base *main_base;
   
   size_t port_;
+  size_t selectIOThread_;
+  size_t maxBufferSize_;
   size_t threadPoolSize_;
   size_t iothreadSize_;
-  size_t maxBufferSize_;
-  size_t selectIOThread_;
   std::mutex connMutex;                       // 处理连接时，以及返回连接时候
 
   std::shared_ptr<ThreadPool> thread_pool;   // 线程池

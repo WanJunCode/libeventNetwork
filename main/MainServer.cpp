@@ -1,14 +1,15 @@
 #include "MainServer.h"
-
 #include "log.h"
+#include "IOThread.h"
+#include "../Package/ChatPackage.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <algorithm>
 #include <chrono>
-#include "IOThread.h"
-#include "Package/ChatPackage.h"
+
 
 #define MAXBUFFERSIZE (1024*16*16)
 
@@ -27,13 +28,13 @@ MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize)
     transport_ = make_shared<MyTransport>(this);
     thread_pool = make_shared<ThreadPool>(POOL_SIZE);
 
-    for(int i=0;i<iothreadSize_;i++){
+    for(size_t i=0;i<iothreadSize_;i++){
         // 使用智能指针，在析构函数中不再需要手动析构
         iothreads_.push_back(std::make_shared<IOThread>(this));
     }
     
     // 开启 iothread loop
-    for(int i=0;i<iothreadSize_;i++){
+    for(size_t i=0;i<iothreadSize_;i++){
         thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
 
@@ -51,14 +52,14 @@ MainServer::~MainServer()
 {
     LOG_DEBUG("main server destructure ...\n");
 
-    for(int i=0;i<iothreads_.size();i++){
+    for(size_t i=0;i<iothreads_.size();i++){
         iothreads_[i]->breakLoop(false);
     }
 
     redis_pool->exit();
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
-    for (int i = 0; i < activeTConnection.size(); i++){
+    for (size_t i = 0; i < activeTConnection.size(); i++){
         delete activeTConnection[i];
     }
 
@@ -152,10 +153,11 @@ bool MainServer::isActive(TConnection *conn) const{
 
 // static
 void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args){
+    UNUSED(what);
     MainServer *server = static_cast<MainServer *>(args);
     char recvline[80];
     bzero(recvline,sizeof(recvline));
-    int len = read(stdin_fd, recvline, sizeof(recvline));
+    read(stdin_fd, recvline, sizeof(recvline));
     LOG_DEBUG("you have input cmd : [%s] \n", recvline);
     if (strstr(recvline, "over") != NULL){
         event_base_loopbreak(server->getBase());
