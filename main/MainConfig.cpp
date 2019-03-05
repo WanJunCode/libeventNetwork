@@ -22,7 +22,9 @@ void MainConfig::loadFromFile(const std::string path){
         parseFromJson(text);
 
         // 申请的空间是内置类型， malloc 申请的空间可以使用 free delete 释放
-        delete text;
+        free(text);
+    }else{
+        LOG_DEBUG("config json file read failure\n");
     }
 }
 
@@ -30,14 +32,24 @@ bool MainConfig::parseFromJson(const std::string &json){
     try{
         // 可能导致内存泄露，单例模式
         Json::Value root;
-
         if(Json::Reader().parse(json,root)){
-            if(!root["ThreadPools"].isNumeric()){
-                LOG_DEBUG("config json node[ThreadPools] is not numeric\n");
+            if(root["workers"].isNumeric() == false){
+                LOG_DEBUG("config json node[workers] is not numeric\n");
                 return false;
             }
-            numOfThreadPool = root["ThreadPools"].asInt();
-            LOG_DEBUG("number of thread pool is [%d]\n",numOfThreadPool);
+            numOfThreadPool = root["workers"].asInt();
+            if(root["iothreads"].isNumeric() == false){
+                LOG_DEBUG("config json node[iothreads] is not numeric\n");                
+                return false;
+            }
+            numOfIOThreads = root["iothreads"].asInt();
+
+            if(root["logFileOutput"].isString() == false){
+                LOG_DEBUG("config json node[logFileOutput] is not string\n");
+                return false;    
+            }
+            path_for_logcppfile = root["logFileOutput"].asString();
+
 
             return true;
         }else{

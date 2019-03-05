@@ -1,4 +1,5 @@
 #include "Tool.h"
+#include "logcpp.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -54,11 +55,11 @@ const char* StripFileName(const char *full_name) {
 }
 
 //std::string.c_str()
+// 内部使用 malloc 开辟空间，外部需要使用 free 释放空间
 char *textFileRead(const char* filename){
     FILE *pf = fopen(filename,"r");
-    if(pf!=NULL){
+    if(pf != NULL){
         fseek(pf,0,SEEK_END);
-
         long lsize = ftell(pf);
 
         rewind(pf);
