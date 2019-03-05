@@ -1,7 +1,7 @@
 #include "Redis.h"
 #include "RedisPool.h"
 #include <iostream>
-#include "../main/log.h"
+#include "../main/logcpp.h"
 using namespace std;
 
 int Redis::count=0;

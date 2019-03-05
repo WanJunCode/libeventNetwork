@@ -1,4 +1,4 @@
-#include "log.h"
+#include "logcpp.h"
 
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -12,14 +12,14 @@
 #include <fcntl.h>
 #include <memory>
 #include "../System/config.h"
-Log Log::root_log;
+Log Log::root_logcpp;
 
 Log::Log():
     root(log4cpp::Category::getRoot()){
 
     log4cpp::PatternLayout* pLayout = new log4cpp::PatternLayout();
     pLayout->setConversionPattern("%d: %p %c %x: %m%n");
-    log4cpp::Appender* appender = new log4cpp::FileAppender("FileAppender","output/test_log4cpp1.log");
+    log4cpp::Appender* appender = new log4cpp::FileAppender("FileAppender","output/test_logcpp4cpp1.logcpp");
     appender->setLayout(pLayout);
     root.setAppender(appender);
     // Category 需要设置 priority 优先级

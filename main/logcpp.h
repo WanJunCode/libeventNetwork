@@ -12,14 +12,14 @@
 #include "Tool.h"           // vform
 #include "../System/config.h"
 
-// for log4cpp
+// for logcpp4cpp
 #include <log4cpp/Category.hh>
 #include <log4cpp/FileAppender.hh>
 #include <log4cpp/PatternLayout.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 #include <log4cpp/CategoryStream.hh>
 
-#define LOG_FILE "output/log_file.out"
+#define LOG_FILE "output/logcpp_file.out"
 
 #define LOG_DEBUG(fmt,...) \
     Log::getInstance().printf(pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
@@ -28,9 +28,9 @@ class Log{
 public:
     // 单例模式, 静态函数只能访问 静态类成员
     static Log& getInstance(){
-        return root_log;
+        return root_logcpp;
     }
-    static Log root_log;
+    static Log root_logcpp;
 
     Log();
     ~Log();

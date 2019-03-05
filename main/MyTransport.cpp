@@ -12,7 +12,7 @@
 
 #include "MainServer.h"
 #include "TSocket.h"
-#include "log.h"
+#include "logcpp.h"
 
 MyTransport::MyTransport(MainServer *server)
     : server_(server)

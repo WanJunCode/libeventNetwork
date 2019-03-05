@@ -1,5 +1,5 @@
 #include "TConnection.h"
-#include "log.h"
+#include "logcpp.h"
 #include "../Package/ChatPackage.h"
 
 #include <string.h>

@@ -1,5 +1,5 @@
 #include "MainServer.h"
-#include "log.h"
+#include "logcpp.h"
 #include "IOThread.h"
 #include "../Package/ChatPackage.h"
 

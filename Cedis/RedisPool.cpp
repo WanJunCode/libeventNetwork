@@ -3,7 +3,7 @@
 #include <hiredis/hiredis.h>
 #include <atomic>
 
-#include "../main/log.h"
+#include "../main/logcpp.h"
 
 RedisPool::RedisPool(	std::string server,
                 		unsigned int port,

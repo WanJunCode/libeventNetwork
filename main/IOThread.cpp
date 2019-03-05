@@ -1,5 +1,5 @@
 #include "IOThread.h"
-#include "log.h"
+#include "logcpp.h"
 
 #include "TSocket.h"
 #include "MyTransport.h"

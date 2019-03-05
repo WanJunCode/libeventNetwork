@@ -15,7 +15,7 @@
 #include <string.h>
 #include <type_traits>
 
-#include "log.h"
+#include "logcpp.h"
 
 template <class DesType, class SrcType>
 DesType convert(const SrcType &t)

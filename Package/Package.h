@@ -1,7 +1,7 @@
 #ifndef WANJUN_PACKAGE
 #define WANJUN_PACKAGE
 
-#include "../main/log.h"
+#include "../main/logcpp.h"
 #include "../System/config.h"
 
 #include <stdint.h>

@@ -20,13 +20,13 @@ public:
         return numOfIOThreads;
     }
 
-    const char *logfilePath() const{
-        return path_for_logfile;
+    const char *logcppfilePath() const{
+        return path_for_logcppfile;
     }
 private:
     int numOfThreadPool;
     int numOfIOThreads;
-    char *path_for_logfile;
+    char *path_for_logcppfile;
 };
 
 #endif // !WANJUN_MAIN_CONFIJ_H

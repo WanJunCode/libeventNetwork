@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <string.h>
-#include "../main/log.h"
+#include "../main/logcpp.h"
 
 #define array_item_number(array)    (sizeof(array)/sizeof(*(array)))
 

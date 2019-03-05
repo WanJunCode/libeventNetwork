@@ -35,10 +35,10 @@ TConnection  ==>  MainServer  ==>  MyTransport 回收 TSocket
 // 客户端数据处理
 
 
-三. log4cpp 的使用
-g++ 编译添加 -llog4cpp
+三. logcpp4cpp 的使用
+g++ 编译添加 -llogcpp4cpp
 参考链接
-https://www.ibm.com/developerworks/cn/linux/l-log4cpp/
+https://www.ibm.com/developerworks/cn/linux/l-logcpp4cpp/
 
 
 四. 着手协议的定制

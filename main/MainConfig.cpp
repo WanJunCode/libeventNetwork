@@ -2,7 +2,7 @@
 // usr/include/jsoncpp/json/json.h
 
 #include "MainConfig.h"
-#include "log.h"
+#include "logcpp.h"
 #include "Tool.h"
 
 MainConfig::MainConfig(const char *path){
