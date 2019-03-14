@@ -13,7 +13,7 @@ class TSocket;
 class MyTransport
 {
   public:
-    explicit MyTransport(MainServer *server);
+    explicit MyTransport(MainServer *server,size_t backlog = 10);
     ~MyTransport();
     void listen(int port);
     TSocket *accept();
@@ -29,6 +29,8 @@ class MyTransport
     struct evconnlistener *listener_;
     struct event_base *main_base_;
     std::mutex connMutex_;
+
+    size_t backlog_;
 
     std::map<evutil_socket_t, TSocket *> activeSocket;
     std::queue<TSocket *> socketQueue;

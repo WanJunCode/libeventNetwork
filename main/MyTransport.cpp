@@ -14,9 +14,11 @@
 #include "TSocket.h"
 #include "logcpp.h"
 
-MyTransport::MyTransport(MainServer *server)
-    : server_(server)
+MyTransport::MyTransport(MainServer *server,size_t backlog)
+    : server_(server),
+     backlog_(backlog)
 {
+    LOG_DEBUG("initialize transport\n");
 }
 
 MyTransport::~MyTransport()
@@ -48,7 +50,7 @@ void MyTransport::listen(int port)
 
     // reuseable  &&  close_on_free
     listener_ = evconnlistener_new_bind(server_->getBase(), do_accept, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, 
-        10, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        backlog_, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
     if (!listener_){
         perror("create listener error...\n");
@@ -77,7 +79,7 @@ void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t cli
     UNUSED(listener);
     UNUSED(addr);
     UNUSED(socklen);
-    LOG_DEBUG("new client connection [%d]...\n", client_fd);
+    // LOG_DEBUG("new client connection [%d]...\n", client_fd);
     MyTransport *transport = (MyTransport *)args;
     {
         std::lock_guard<std::mutex> locker(transport->connMutex_);

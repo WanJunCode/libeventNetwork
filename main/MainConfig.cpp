@@ -33,23 +33,42 @@ bool MainConfig::parseFromJson(const std::string &json){
         // 可能导致内存泄露，单例模式
         Json::Value root;
         if(Json::Reader().parse(json,root)){
-            if(root["workers"].isNumeric() == false){
-                LOG_DEBUG("config json node[workers] is not numeric\n");
-                return false;
-            }
-            numOfThreadPool = root["workers"].asInt();
-            if(root["iothreads"].isNumeric() == false){
-                LOG_DEBUG("config json node[iothreads] is not numeric\n");                
-                return false;
-            }
-            numOfIOThreads = root["iothreads"].asInt();
 
-            if(root["logFileOutput"].isString() == false){
-                LOG_DEBUG("config json node[logFileOutput] is not string\n");
+            if(root["port_"].isNumeric() == false){
+                LOG_DEBUG("config json node[port_] is not numeric\n");
+                return false;
+            }
+            port_ = root["port_"].asInt();
+
+            if(root["bufferSize_"].isNumeric() == false){
+                LOG_DEBUG("config json node[bufferSize_] is not numeric\n");                
+                return false;
+            }
+            bufferSize_ = root["bufferSize_"].asInt();
+
+            if(root["threadPoolSize_"].isNumeric() == false){
+                LOG_DEBUG("config json node[threadPoolSize_] is not numeric\n");                
+                return false;
+            }
+            threadPoolSize_ = root["threadPoolSize_"].asInt();
+
+            if(root["IOThreads_"].isNumeric() == false){
+                LOG_DEBUG("config json node[IOThreads_] is not numeric\n");                
+                return false;
+            }
+            IOThreads_ = root["IOThreads_"].asInt();
+
+            if(root["backlog_"].isNumeric() == false){
+                LOG_DEBUG("config json node[backlog_] is not numeric\n");                
+                return false;
+            }
+            backlog_ = root["backlog_"].asInt();
+
+            if(root["logFileOutput_"].isString() == false){
+                LOG_DEBUG("config json node[logFileOutput_] is not string\n");
                 return false;    
             }
-            path_for_logcppfile = root["logFileOutput"].asString();
-
+            logFileOutput_ = root["logFileOutput_"].asString();
 
             return true;
         }else{

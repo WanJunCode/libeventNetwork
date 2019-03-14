@@ -1,5 +1,8 @@
 {
-    "workers":100,
-    "iothreads":10,
-    "logFileOutput":"../output"
+    "port_":12345,
+    "bufferSize_":1024,
+    "threadPoolSize_":15,
+    "IOThreads_":10,
+    "backlog_":15,
+    "logFileOutput_":"../output"
 }

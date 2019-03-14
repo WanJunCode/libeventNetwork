@@ -21,8 +21,8 @@
 
 #define LOG_FILE "output/logcpp_file.out"
 
-#define LOG_DEBUG(fmt,...) \
-    Log::getInstance().printf(pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+#define LOG_DEBUG(fmt,...)
+    // Log::getInstance().printf(pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
 
 class Log{
 public:

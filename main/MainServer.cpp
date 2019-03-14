@@ -14,18 +14,34 @@
 #define MAXBUFFERSIZE (1024*16*16)
 
 typedef unsigned char BYTE;
-MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize)
+MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t backlog)
     :port_(port),
     selectIOThread_(0),
     maxBufferSize_(MAXBUFFERSIZE),            // 定义　bufferevent　最大的水位
     threadPoolSize_(poolSize),
-    iothreadSize_(iothreadSize)
+    iothreadSize_(iothreadSize),
+    backlog_(backlog)
 {
+    init();
+}
+
+MainServer::MainServer(MainConfig config){
+    port_ = config.getPort();
+    selectIOThread_ = 0;
+    maxBufferSize_ = config.getBufferSize();
+    threadPoolSize_ = config.getThreadPoolSize();
+    iothreadSize_ = config.getIOThreadSize();
+    backlog_ = config.getBacklog();
+    printf("port [%lu], maxBufferSize_ = [%lu], threadPoolSize_ = [%lu], iothreadSize_ = [%lu], backlog_ = [%lu]\n",port_,maxBufferSize_,threadPoolSize_,iothreadSize_,backlog_);
+    init();
+}
+
+void MainServer::init(){
     main_base = event_base_new();
     if(main_base == NULL){
         LOG_DEBUG("main event base new failure ...\n");
     }
-    transport_ = make_shared<MyTransport>(this);
+    transport_ = make_shared<MyTransport>(this,backlog_);
     thread_pool = make_shared<ThreadPool>(POOL_SIZE);
 
     for(size_t i=0;i<iothreadSize_;i++){
@@ -45,7 +61,6 @@ MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize)
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());
     protocol_->addProtocol(std::make_shared<EchoProtocol>());
-
 }
 
 MainServer::~MainServer()
@@ -91,34 +106,35 @@ void MainServer::serve()
 // server 处理 来自 transport 的 client_conn
 void MainServer::handlerConn(void *args)
 {
-    LOG_DEBUG("main server handler client_conn \n");
+    // LOG_DEBUG("main server handler client_conn \n");
 
     MyTransport *transport = (MyTransport *)args;
     TSocket *sock = transport->accept();
-    LOG_DEBUG("sock->getSocketFD() = [%d] \n", sock->getSocketFD());
+    // LOG_DEBUG("sock->getSocketFD() = [%d] \n", sock->getSocketFD());
 
     // 将接受的 TSocket 包装成 TConnection ， 使用 main_server->eventbase
     TConnection *conn;
     {
         std::lock_guard<std::mutex> locker(connMutex);
         if (connectionQueue.empty()){
+            ++selectIOThread_;
             selectIOThread_ = selectIOThread_ % IOTHREAD_SIZE;
-            LOG_DEBUG("select iothread num： [%d]\n",selectIOThread_++);
+            // LOG_DEBUG("select iothread num： [%d]\n",selectIOThread_);
             // 选择 iothread 创建 TConnection
             conn = new TConnection(sock, iothreads_[selectIOThread_].get());
-            LOG_DEBUG("新建一个 TConnection \n");
+            // LOG_DEBUG("新建一个 TConnection \n");
         }else{
             conn = connectionQueue.front();
             connectionQueue.pop();
             conn->setSocket(sock);
-            LOG_DEBUG("复用一个 TConnection \n");
+            // LOG_DEBUG("复用一个 TConnection \n");
         }
 
         if(conn){
             // 开启 connection 的 bufferevent
             conn->notify();
             activeTConnection.push_back(conn);
-            LOG_DEBUG("mainserver active push back conn\n");
+            // LOG_DEBUG("mainserver active push back conn\n");
         }else{
             LOG_DEBUG("socket --> TConnection 失败 ...\n");
         }
@@ -157,11 +173,17 @@ void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args)
     MainServer *server = static_cast<MainServer *>(args);
     char recvline[80];
     bzero(recvline,sizeof(recvline));
-    read(stdin_fd, recvline, sizeof(recvline));
+    int length = read(stdin_fd, recvline, sizeof(recvline));
+    recvline[length] = '\0';
     LOG_DEBUG("you have input cmd : [%s] \n", recvline);
     if (strstr(recvline, "over") != NULL){
         event_base_loopbreak(server->getBase());
     }else if (strstr(recvline, "size") != NULL){
+        printf("connection vector size %lu \n", server->activeTConnection.size());
+        printf("connection queue size %lu \n", server->connectionQueue.size());
+        printf("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
+        printf("transport socketqueue size = %d\n\n\n",server->transport_->getSocketQueue());
+
         LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
         LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
         LOG_DEBUG("transport activeSokcet size = %d\n",server->transport_->getActiveSize());

@@ -6,6 +6,7 @@
 #include "TConnection.h"
 #include "ThreadPool.h"
 #include "IOThread.h"
+#include "MainConfig.h"
 #include "../Cedis/RedisPool.h"
 #include "../Package/MultipleProtocol.h"
 
@@ -25,9 +26,12 @@ class TSocket;
 class MyTransport;
 class TConnection;
 class Protocol;
+class MainConfig;
 class MainServer{
 public:
-  MainServer(size_t port = 12345,size_t poolSize = 20,size_t iothreadSize = 10);
+  MainServer(size_t port = 12345,size_t poolSize = 20,size_t iothreadSize = 10,size_t backlog = 10);
+  MainServer(MainConfig config);
+  void init();
   ~MainServer();
 
   void serve();
@@ -60,6 +64,7 @@ private:
   size_t maxBufferSize_;
   size_t threadPoolSize_;
   size_t iothreadSize_;
+  size_t backlog_;
   std::mutex connMutex;                       // 处理连接时，以及返回连接时候
 
   std::shared_ptr<ThreadPool> thread_pool;   // 线程池

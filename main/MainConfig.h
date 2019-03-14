@@ -13,20 +13,33 @@ public:
     bool parseFromJson(const std::string &json);
 
 
-    int getThreadPools() const{
-        return numOfThreadPool;
+    size_t getPort(){
+        return port_;
     }
-    int getIOThreads() const{
-        return numOfIOThreads;
+    size_t getBufferSize(){
+        return bufferSize_;
     }
+    size_t getThreadPoolSize(){
+        return threadPoolSize_;
+    }
+    size_t getIOThreadSize(){
+        return IOThreads_;
+    }
+    size_t getBacklog(){
+        return backlog_;
+    }
+
     const std::string logcppfilePath() const{
-        return path_for_logcppfile;
+        return logFileOutput_;
     }
     
 private:
-    int numOfThreadPool;                // 线程池数量
-    int numOfIOThreads;                 // io线程数量
-    std::string path_for_logcppfile;    // log日志文件路径
+    size_t port_;
+    size_t bufferSize_;
+    size_t threadPoolSize_;
+    size_t IOThreads_;                 // io线程数量
+    size_t backlog_;
+    std::string logFileOutput_;    // log日志文件路径
 };
 
 #endif // !WANJUN_MAIN_CONFIJ_H
