@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include "MemoryPool.h"
 /************************************************************************/
-/* 内存池起始地址对齐到ADDR_ALIGN字节 
+/* 内存池起始地址对齐到ADDR_ALIGN字节
+ */
 /************************************************************************/
 size_t check_align_addr(void *&pBuf)
 {
@@ -16,7 +17,7 @@ size_t check_align_addr(void *&pBuf)
     return align;
 }
 /************************************************************************/
-/* 内存block大小对齐到MINUNITSIZE字节 
+// 内存block大小对齐到MINUNITSIZE字节 
 /************************************************************************/
 size_t check_align_block(size_t size)
 {
@@ -24,7 +25,7 @@ size_t check_align_block(size_t size)
     return size - align;
 }
 /************************************************************************/
-/* 分配内存大小对齐到SIZE_ALIGN字节 
+//  分配内存大小对齐到SIZE_ALIGN字节 
 /************************************************************************/
 size_t check_align_size(size_t size)
 {
@@ -145,7 +146,7 @@ void delete_chunk(memory_chunk *&head, memory_chunk *element)
     element->next = NULL;
 }
 /************************************************************************/
-/* 内存映射表中的索引转化为内存起始地址                                                                     
+// 内存映射表中的索引转化为内存起始地址                                                                     
 /************************************************************************/
 void *index2addr(PMEMORYPOOL mem_pool, size_t index)
 {
@@ -156,7 +157,7 @@ void *index2addr(PMEMORYPOOL mem_pool, size_t index)
     return ret;
 }
 /************************************************************************/
-/* 内存起始地址转化为内存映射表中的索引                                                                     
+//  内存起始地址转化为内存映射表中的索引                                                                     
 /************************************************************************/
 size_t addr2index(PMEMORYPOOL mem_pool, void *addr)
 {
@@ -171,6 +172,7 @@ size_t addr2index(PMEMORYPOOL mem_pool, void *addr)
 * sBufSize: 给定的内存buffer大小 
 * 返回生成的内存池指针
 * 根据给定的内存大小，划分 4个部分 
+*/
 /************************************************************************/
 PMEMORYPOOL CreateMemoryPool(void *pBuf, size_t sBufSize)
 {
@@ -206,7 +208,6 @@ PMEMORYPOOL CreateMemoryPool(void *pBuf, size_t sBufSize)
     // 初始化 pfree_mem_chunk，获得双向列表的 最前面node
     // node - node - node - node - ... - node - head
     memory_chunk *tmp = front_pop(mem_pool->pfree_mem_chunk_pool);
-    memory_chunk *tmp_next = tmp->next;
     tmp->pre = tmp;
     tmp->next = tmp; // 循环节点
     tmp->pfree_mem_addr = NULL;
@@ -231,7 +232,7 @@ PMEMORYPOOL CreateMemoryPool(void *pBuf, size_t sBufSize)
     return mem_pool;
 }
 /************************************************************************/
-/* 暂时没用 
+//  暂时没用 
 /************************************************************************/
 void ReleaseMemoryPool(PMEMORYPOOL *pool)
 {
@@ -241,6 +242,7 @@ void ReleaseMemoryPool(PMEMORYPOOL *pool)
 * pool: 内存池 指针 
 * sMemorySize: 要分配的内存大小 
 * 成功时返回分配的内存起始地址，失败返回NULL 
+*/
 /************************************************************************/
 void *GetMemory(size_t sMemorySize, PMEMORYPOOL pool)
 {
@@ -317,6 +319,7 @@ void *GetMemory(size_t sMemorySize, PMEMORYPOOL pool)
 /* 从内存池中释放申请到的内存 
 * pool：内存池指针 
 * ptrMemoryBlock：申请到的内存起始地址 
+*/
 /************************************************************************/
 void FreeMemory(void *ptrMemoryBlock, PMEMORYPOOL pool)
 {

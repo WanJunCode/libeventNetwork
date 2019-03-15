@@ -185,7 +185,7 @@ TConnection::read_request(){
 
             pkg->debug();
             auto m = pkg->innerData();            
-            // auto length = send(socket_->getSocketFD(), m.c_str() , m.length() ,0);
+            auto length = send(socket_->getSocketFD(), m.c_str() , m.length() ,0);
             LOG_DEBUG("buffer [%s] strlenbuffer [%d] length = [%d]\n",m.data(), m.length() ,length);
 
 #ifdef GRPC

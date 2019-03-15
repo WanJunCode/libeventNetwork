@@ -46,10 +46,9 @@ typedef struct MEMORYPOOL
  * pBuf: 给定的内存buffer起始地址 
  * sBufSize: 给定的内存buffer大小 
  * 返回生成的内存池指针 
+ */
 /************************************************************************/  
 PMEMORYPOOL CreateMemoryPool(void* pBuf, size_t sBufSize);  
-/************************************************************************/  
-/* 暂时没用 
 /************************************************************************/  
 void ReleaseMemoryPool(PMEMORYPOOL* ppMem) ;   
 /************************************************************************/  
@@ -57,6 +56,7 @@ void ReleaseMemoryPool(PMEMORYPOOL* ppMem) ;
  * pMem: 内存池 指针 
  * sMemorySize: 要分配的内存大小
  * 成功时返回分配的内存起始地址，失败返回NULL
+ */
 /************************************************************************/  
 void* GetMemory(size_t sMemorySize, PMEMORYPOOL pMem) ;  
   
@@ -64,6 +64,7 @@ void* GetMemory(size_t sMemorySize, PMEMORYPOOL pMem) ;
 /* 从内存池中释放申请到的内存 
  * pMem：内存池指针 
  * ptrMemoryBlock：申请到的内存起始地址 
+ */
 /************************************************************************/  
 void FreeMemory(void *ptrMemoryBlock, PMEMORYPOOL pMem) ;  
   

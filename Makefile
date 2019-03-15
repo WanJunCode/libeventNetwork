@@ -4,7 +4,7 @@ grpc_lib = -L/usr/local/lib `pkg-config --libs protobuf grpc++ grpc` -Wl,--no-as
 
 BIN = bin
 OUTPUT = output
-EXECUTABLE = wj-server
+EXECUTABLE = Cloud-server
 CXX = g++
 C_FLAGS := -std=c++11 -Wall -Wextra -ggdb
 
