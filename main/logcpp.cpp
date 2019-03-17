@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <memory>
 #include "../System/config.h"
+
 Log Log::root_logcpp;
 
 Log::Log():

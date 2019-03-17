@@ -174,15 +174,19 @@ void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args)
     char recvline[80];
     bzero(recvline,sizeof(recvline));
     int length = read(stdin_fd, recvline, sizeof(recvline));
+    if(length>1)
+        length--;
     recvline[length] = '\0';
     LOG_DEBUG("you have input cmd : [%s] \n", recvline);
     if (strstr(recvline, "over") != NULL){
         event_base_loopbreak(server->getBase());
     }else if (strstr(recvline, "size") != NULL){
+#ifndef print_debug
         printf("connection vector size %lu \n", server->activeTConnection.size());
         printf("connection queue size %lu \n", server->connectionQueue.size());
         printf("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
         printf("transport socketqueue size = %d\n\n\n",server->transport_->getSocketQueue());
+#endif // !
 
         LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
         LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
