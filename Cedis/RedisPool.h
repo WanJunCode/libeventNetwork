@@ -15,6 +15,7 @@ public:
     virtual void run() = 0;
 };
 
+class RedisConfig;
 class RedisPool:public Runnable {
 public:
 	RedisPool(  std::string server,
@@ -22,6 +23,8 @@ public:
                 std::string password,
                 unsigned int conns_max,
                 unsigned int conns_min);
+
+    RedisPool(std::shared_ptr<RedisConfig> config);
     
     // 防止 赋值 拷贝, 数据库连接库不能复制和赋值
 	RedisPool(const RedisPool&)=delete;

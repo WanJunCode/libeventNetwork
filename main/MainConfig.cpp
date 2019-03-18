@@ -7,6 +7,7 @@
 
 MainConfig::MainConfig(const char *path){
     LOG_DEBUG("instructure of main config\n");
+    redisConfig_ = std::make_shared<RedisConfig>();
     loadFromFile(path);
 }
 
@@ -70,6 +71,14 @@ bool MainConfig::parseFromJson(const std::string &json){
             }
             logFileOutput_ = root["logFileOutput_"].asString();
 
+            if(root["redis"].isObject() == false){
+                LOG_DEBUG("config json node[redis] is not object\n");
+                return false;
+            }
+            if( false == getRedis(Json::FastWriter().write(root["redis"]))){
+                return false;
+            }
+            
             return true;
         }else{
             LOG_DEBUG("reader parse failed\n");
@@ -78,4 +87,22 @@ bool MainConfig::parseFromJson(const std::string &json){
         LOG_DEBUG("json parse failded:%s\n",e.what());
     }
     return true;
+}
+
+bool MainConfig::getRedis(std::string config){
+    try {
+        Json::Value root;
+        if (Json::Reader().parse(config, root)) {
+            std::string ip = root["ip"].asString();
+            unsigned int port = root["port"].asInt();
+            std::string passwd = root["passwd"].asString();
+            unsigned int max = root["max"].asInt();
+            unsigned int min = root["min"].asInt();
+            redisConfig_ = std::make_shared<RedisConfig>(ip,port,passwd,max,min);
+            return true;
+        }
+    } catch (std::exception &e) {
+        LOG_DEBUG("Json prase failded:%s", e.what());
+    }
+    return false;
 }

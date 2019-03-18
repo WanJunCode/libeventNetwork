@@ -25,13 +25,15 @@ MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t ba
     init();
 }
 
-MainServer::MainServer(MainConfig config){
-    port_ = config.getPort();
+MainServer::MainServer(MainConfig *config)
+    :config_(config){
     selectIOThread_ = 0;
-    maxBufferSize_ = config.getBufferSize();
-    threadPoolSize_ = config.getThreadPoolSize();
-    iothreadSize_ = config.getIOThreadSize();
-    backlog_ = config.getBacklog();
+    port_ = config->getPort();
+    maxBufferSize_ = config->getBufferSize();
+    threadPoolSize_ = config->getThreadPoolSize();
+    iothreadSize_ = config->getIOThreadSize();
+    backlog_ = config->getBacklog();
+
     printf("port [%lu], maxBufferSize_ = [%lu], threadPoolSize_ = [%lu], iothreadSize_ = [%lu], backlog_ = [%lu]\n",port_,maxBufferSize_,threadPoolSize_,iothreadSize_,backlog_);
     init();
 }
@@ -54,7 +56,8 @@ void MainServer::init(){
         thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
 
-    redis_pool = make_shared<RedisPool>("127.0.0.1",6379,"",100,5);
+    // redis_pool = make_shared<RedisPool>(config_->redisAddress(),config_->redisPort(),config_->redisPasswd(),100,5);
+    redis_pool = make_shared<RedisPool>(config_->redisConfig());
     thread_pool->enqueue(std::ref(*redis_pool));
 
     // 添加需要解析的协议种类

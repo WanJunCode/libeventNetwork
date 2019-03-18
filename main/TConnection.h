@@ -51,7 +51,7 @@ public:
     TSocket *getSocket();
     bool notify();
     void heartBeat();
-    void record(ChatPackage* pkg);
+    void record(std::string message);
 
     void workSocket();
     void recv_framing();

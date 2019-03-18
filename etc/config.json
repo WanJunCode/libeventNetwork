@@ -4,5 +4,12 @@
     "threadPoolSize_":15,
     "IOThreads_":10,
     "backlog_":15,
-    "logFileOutput_":"../output"
+    "logFileOutput_":"../output",
+    "redis":{
+        "ip":"100.73.72.10",
+        "port":6379,
+        "passwd":"",
+        "max":20,
+        "min":5
+    }
 }

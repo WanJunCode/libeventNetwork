@@ -31,7 +31,7 @@ class MainServer
 {
 public:
   MainServer(size_t port = 12345, size_t poolSize = 20, size_t iothreadSize = 10, size_t backlog = 10);
-  MainServer(MainConfig config);
+  MainServer(MainConfig *config);
   void init();
   ~MainServer();
 
@@ -65,6 +65,8 @@ public:
 private:
   struct event *ev_stdin; // 处理命令行输入
   struct event_base *main_base;
+
+  MainConfig *config_;
 
   size_t port_;
   size_t selectIOThread_;

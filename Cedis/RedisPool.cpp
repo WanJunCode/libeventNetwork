@@ -1,4 +1,5 @@
 #include "RedisPool.h"
+#include "RedisConfig.h"
 #include <algorithm>
 #include <hiredis/hiredis.h>
 #include <atomic>
@@ -19,15 +20,31 @@ RedisPool::RedisPool(	std::string server,
 	init();
 }
 
+RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
+	:stop(false){
+	if(config){
+		server_ = config->getIP();
+		port_ = config->getPort();
+		password_ = config->getPasswd();
+		conns_max_ = config->getMax();
+		conns_min_ = config->getMin();
+		// printf("ip [%s], port [%d], passwd [%s], max [%d], min [%d]\n",server_.data(),port_,password_.data(),conns_max_,conns_min_);
+	}else{
+		assert(false);
+	}
+	init();
+}
+
+
 void RedisPool::init(){
 	for(unsigned int i=0;i<conns_min_;++i){	
 		auto conn = new Redis(server_,port_,password_);
 		if(conn->is_valid()){								// 判断该连接是否可用
 			conn->setUseable();								// 设置为可用
 			conn->attach(this);								// 给连接绑定连接池
-			redis_vec.push_back(conn);					// 插入cedisVector队尾部
+			redis_vec.push_back(conn);						// 插入cedisVector队尾部
 		}else{
-    		LOG_DEBUG("fail to create a conn\n");
+    		LOG_DEBUG("fail to create redis connection\n");
 		}
 	}
 }

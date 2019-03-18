@@ -116,9 +116,6 @@ TConnection::setSocket(TSocket *socket)
 void 
 TConnection::transition()
 {
-    static int deep = 0;
-    deep++;
-    // LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
     switch(appstate){
         case AppState::TRANS_INIT:
             // LOG_DEBUG("trans init\n");
@@ -152,7 +149,6 @@ TConnection::transition()
             break;
 
         case AppState::APP_READ_REQUEST:
-            // LOG_DEBUG("app read request\n");
             read_request();
             break;
         case AppState::APP_CLOSE_CONNECTION:
@@ -162,9 +158,6 @@ TConnection::transition()
             LOG_DEBUG("Unexpect application state!");
             return;
     }
-    // LOG_DEBUG("into transition !!!!!!!!!!!!!!!!!!  deep [%d]\n",deep);
-    deep--;
-    // LOG_DEBUG("TConnection transport ...离开\n");
 }
 
 void 
@@ -186,12 +179,12 @@ TConnection::read_request(){
         } else {
             // 是否是线程池处理
             // ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
-            // record((ChatPackage *)(pkg));
 
             pkg->debug();
-            auto m = pkg->innerData();            
+            auto m = pkg->innerData();
             auto length = send(socket_->getSocketFD(), m.c_str() , m.length() ,0);
             LOG_DEBUG("buffer [%s] strlenbuffer [%d] length = [%d]\n",m.data(), m.length() ,length);
+            record(m);
 
 #ifdef GRPC
             server_->grpcMethod(pkg->innerData());
@@ -290,9 +283,7 @@ void TConnection::read_cb(struct bufferevent *bev, void *args)
 }
 
 void
-TConnection::record(ChatPackage *pkg){
-    std::string message;
-    message.append((char*)pkg->data(),pkg->length());
+TConnection::record(std::string message){
     server_->getRedis()->executeCommand("lpush %s %s",socket_->getPeerHost().c_str(),message.c_str());
 }
 
@@ -322,9 +313,9 @@ TConnection::recv_framing(){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
-#ifndef debug_print
+#ifndef print_debug
         printf("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
-#endif // !debug_print
+#endif // !print_debug
 
         chishenme(byteTohex((void *)tmp_ptr, image.iov_len));
 

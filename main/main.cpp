@@ -7,10 +7,11 @@ int main(int argc, char const *argv[]){
     UNUSED(argc);
     UNUSED(argv);
     PosixSignal::register_signals();
-    MainConfig config(CONFIG_PATH);
+    MainConfig *config = new MainConfig(CONFIG_PATH);
     MainServer server(config);
     LOG_DEBUG("***********************wanjun server start***********************\n");
     server.serve();
     LOG_DEBUG("************************wanjun server end************************\n");
+    delete config;
     return 0;
 }
