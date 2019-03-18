@@ -123,8 +123,10 @@ void MyTransport::returnTSocket(TSocket *sock)
             LOG_DEBUG("activeSocket 中没找到...\n");
         }
         
-        // 关闭回收的TSocket连接
         sock->close();
+
+        // 关闭回收的TSocket连接
+        // delete sock;
         socketQueue.push(sock);
     }
 }

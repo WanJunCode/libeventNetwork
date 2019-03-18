@@ -61,10 +61,10 @@ TConnection::init(){
     lastUpdate_=time(NULL);
     maxBufferSize_ = server_->getBufferSize();
 
-    LOG_DEBUG("TConnection init bufferevent...\n");
     bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
     if (bev) {
         if(socket_->getSocketFD() == INVALID_SOCKET){
+            LOG_DEBUG("socket is invalid\n");
             // FD 无效
             struct sockaddr_in addr;
             memset(&addr,0,sizeof(addr));
@@ -72,7 +72,6 @@ TConnection::init(){
             addr.sin_addr.s_addr = inet_addr(socket_->getLocalHost().c_str());
             addr.sin_port = htons(socket_->getLocalPort());
             bzero(&(addr.sin_zero),8);
-            LOG_DEBUG("1\n");
             if( -1 == bufferevent_socket_connect(bev,(sockaddr*)&addr,sizeof(addr)) ){
                 LOG_DEBUG("TConnection fd [%d] bufferevent_socket_connect fail!\n",socket_->getSocketFD());
                 close();
@@ -80,18 +79,16 @@ TConnection::init(){
                 LOG_DEBUG("TConnection fd [%d] init success!\n",socket_->getSocketFD());
             }
         }
-        LOG_DEBUG("2\n");
+
         bufferevent_setcb(  bev, 
                             TConnection::read_cb, 
                             NULL, 
                             TConnection::error_cb, 
                             this);
         bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
-        LOG_DEBUG("3\n");
 
         // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
-        LOG_DEBUG("4\n");
         
         server_->getRedis()->executeCommand("lpush user %s",socket_->getSocketInfo().c_str());
 
@@ -126,7 +123,6 @@ TConnection::transition()
         case AppState::TRANS_INIT:
             // LOG_DEBUG("trans init\n");
             appstate = AppState::APP_INIT;
-            LOG_DEBUG("5\n");
             bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
             transition();
             break;
@@ -156,8 +152,11 @@ TConnection::transition()
             break;
 
         case AppState::APP_READ_REQUEST:
-            LOG_DEBUG("app read request\n");
+            // LOG_DEBUG("app read request\n");
             read_request();
+            break;
+        case AppState::APP_CLOSE_CONNECTION:
+            close();
             break;
         default:
             LOG_DEBUG("Unexpect application state!");
@@ -222,7 +221,6 @@ TConnection::getSocket()
 void 
 TConnection::close()
 {
-    appstate=AppState::APP_CLOSE_CONNECTION;
     // if(socket_)
     //     socket_->close();
 
@@ -239,6 +237,8 @@ TConnection::close()
         LOG_DEBUG("TConnection close return tconnection\n");
         server_->returnTConnection(this);
     }
+
+    appstate=AppState::APP_CLOSE_CONNECTION;
 }
 
 bool 
@@ -251,10 +251,13 @@ TConnection::notify(){
 
 void
 TConnection::heartBeat(){
-    LOG_DEBUG("TConnection heartBeat\n");
+    appstate=AppState::APP_CLOSE_CONNECTION;
     if(heartBeat_  < (time(NULL) - lastUpdate_) ){
-        LOG_DEBUG("timeout close()\n");
-        close();
+        // 如果不使用 notify 来关闭连接，会导致bufferevent 复用bug
+        if(!notify()){
+            LOG_DEBUG("fail to notify tconnection\n");
+            close();    
+        }
     }
 }
 
@@ -306,13 +309,11 @@ TConnection::workSocket(){
         default:
             break;
     }
-    LOG_DEBUG("Work Socket end\n");
+    // LOG_DEBUG("Work Socket end\n");
 }
 
 void
 TConnection::recv_framing(){
-            LOG_DEBUG("6\n");
-
     struct evbuffer *input = bufferevent_get_input(bev);
     // LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
     struct evbuffer_iovec image;
@@ -321,9 +322,10 @@ TConnection::recv_framing(){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
+#ifndef debug_print
         printf("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
-        
-        // 
+#endif // !debug_print
+
         chishenme(byteTohex((void *)tmp_ptr, image.iov_len));
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
@@ -344,7 +346,7 @@ TConnection::recv_framing(){
         // std::shared_ptr<ChatPackage> pkg = make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
         // record(pkg.get());
     } else {
-        LOG_DEBUG("evbuffer_peek 失败\n");
+        LOG_DEBUG("evbuffer_peek end\n");
     }
     // LOG_DEBUG("recv framing end\n");
 }

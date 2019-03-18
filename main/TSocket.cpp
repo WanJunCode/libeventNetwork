@@ -376,7 +376,7 @@ std::string TSocket::getSocketInfo()
     }
     std::ostringstream oss;
     // 在 parseSocket 中解析了 peerHost，peerPort
-    oss << "<Host: " << socket_info_.peerHost_ << " Port: " << socket_info_.peerPort_ << ">";
+    oss << "<Host: " << socket_info_.peerHost_ << " Port: " << socket_info_.peerPort_ << "> : "<<time(NULL);
     return oss.str();
 }
 
