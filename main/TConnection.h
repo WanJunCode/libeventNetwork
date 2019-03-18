@@ -50,6 +50,7 @@ public:
     MainServer *getServer();
     TSocket *getSocket();
     bool notify();
+    void heartBeat();
     void record(ChatPackage* pkg);
 
     void workSocket();
@@ -58,10 +59,19 @@ public:
 
     void chishenme(std::string msg);
 
+    void setHeartBeat(int heart){
+        heartBeat_ = heart;
+    }
+
+    int getHeartBeat(){
+        return heartBeat_;
+    }
+
 private:
     void read_request();
 public:
     time_t lastUpdate_;
+    int heartBeat_;
 
 private:
     TSocket *socket_;

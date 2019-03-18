@@ -167,6 +167,35 @@ bool MainServer::isActive(TConnection *conn) const{
     }
 }
 
+void MainServer::heartBeat(){
+    for(auto conn : activeTConnection)
+    {
+        conn->heartBeat();
+    }
+}
+
+void MainServer::execute(std::string cmd,MainServer *server){
+    if (cmd == "size"){
+#ifndef print_debug
+        printf("connection vector size %lu \n", server->activeTConnection.size());
+        printf("connection queue size %lu \n", server->connectionQueue.size());
+        printf("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
+        printf("transport socketqueue size = %d\n",server->transport_->getSocketQueue());
+#endif // !
+
+        LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
+        LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
+        LOG_DEBUG("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
+        LOG_DEBUG("transport socketqueue size = %d\n\n",server->transport_->getSocketQueue());
+    }else if(cmd == "hb"){
+        LOG_DEBUG("heart beat\n");
+        server->heartBeat();
+    }else{
+        LOG_DEBUG("cmd error...\n");
+    }
+
+}
+
 // static
 void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args){
     UNUSED(what);
@@ -177,25 +206,11 @@ void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args)
     if(length>1)
         length--;
     recvline[length] = '\0';
-    LOG_DEBUG("you have input cmd : [%s] \n", recvline);
-    if (strstr(recvline, "over") != NULL){
-        event_base_loopbreak(server->getBase());
-    }else if (strstr(recvline, "size") != NULL){
-#ifndef print_debug
-        printf("connection vector size %lu \n", server->activeTConnection.size());
-        printf("connection queue size %lu \n", server->connectionQueue.size());
-        printf("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
-        printf("transport socketqueue size = %d\n\n\n",server->transport_->getSocketQueue());
-#endif // !
 
-        LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
-        LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
-        LOG_DEBUG("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
-        LOG_DEBUG("transport socketqueue size = %d\n\n\n",server->transport_->getSocketQueue());
-    }else if(strstr(recvline,"thread")!=NULL){
-        // server->getPool()->enqueue(std::ref(*(server->io)));
-        // LOG_DEBUG("cmd error...\n");
+    std::string cmd(recvline);
+    if (cmd == "over"){
+        event_base_loopbreak(server->getBase());
     }else{
-        LOG_DEBUG("cmd error...\n");
-    }
+        execute(cmd,server);
+    }  
 }

@@ -53,6 +53,8 @@ TConnection::~TConnection(){
 // 初始化设置，重新设置 TSocket
 void 
 TConnection::init(){
+    // 默认是五秒钟心跳间隔
+    heartBeat_ = 30;
     appstate = AppState::TRANS_INIT;
     socketState = SocketState::SOCKET_RECV_FRAMING;
 
@@ -70,7 +72,7 @@ TConnection::init(){
             addr.sin_addr.s_addr = inet_addr(socket_->getLocalHost().c_str());
             addr.sin_port = htons(socket_->getLocalPort());
             bzero(&(addr.sin_zero),8);
-            
+            LOG_DEBUG("1\n");
             if( -1 == bufferevent_socket_connect(bev,(sockaddr*)&addr,sizeof(addr)) ){
                 LOG_DEBUG("TConnection fd [%d] bufferevent_socket_connect fail!\n",socket_->getSocketFD());
                 close();
@@ -78,15 +80,18 @@ TConnection::init(){
                 LOG_DEBUG("TConnection fd [%d] init success!\n",socket_->getSocketFD());
             }
         }
-
+        LOG_DEBUG("2\n");
         bufferevent_setcb(  bev, 
                             TConnection::read_cb, 
                             NULL, 
                             TConnection::error_cb, 
                             this);
         bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
+        LOG_DEBUG("3\n");
+
         // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
+        LOG_DEBUG("4\n");
         
         server_->getRedis()->executeCommand("lpush user %s",socket_->getSocketInfo().c_str());
 
@@ -121,6 +126,7 @@ TConnection::transition()
         case AppState::TRANS_INIT:
             // LOG_DEBUG("trans init\n");
             appstate = AppState::APP_INIT;
+            LOG_DEBUG("5\n");
             bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
             transition();
             break;
@@ -224,7 +230,7 @@ TConnection::close()
     {
         // 释放 TSocket 上建立的 bufferevent
         bufferevent_free(bev);
-        bev=NULL;
+        bev = NULL;
     }
 
     // 还是需要 MainServer 去处理 TConnection
@@ -241,6 +247,15 @@ TConnection::notify(){
         return iothread_->notify(this);
     }
     return false;
+}
+
+void
+TConnection::heartBeat(){
+    LOG_DEBUG("TConnection heartBeat\n");
+    if(heartBeat_  < (time(NULL) - lastUpdate_) ){
+        LOG_DEBUG("timeout close()\n");
+        close();
+    }
 }
 
 // static
@@ -296,6 +311,8 @@ TConnection::workSocket(){
 
 void
 TConnection::recv_framing(){
+            LOG_DEBUG("6\n");
+
     struct evbuffer *input = bufferevent_get_input(bev);
     // LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
     struct evbuffer_iovec image;

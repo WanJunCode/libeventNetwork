@@ -38,6 +38,7 @@ public:
   void handlerConn(void *args);
   void returnTConnection(TConnection *conn);
   bool isActive(TConnection *conn) const;
+  void heartBeat();
 
   std::shared_ptr<ThreadPool> getPool(){
     return thread_pool;
@@ -75,11 +76,13 @@ private:
   // 使用共享智能指针
   std::vector<std::shared_ptr<IOThread> > iothreads_;
 
+  // 活动的连接
   std::vector<TConnection *> activeTConnection;
   std::queue<TConnection *> connectionQueue;
 
 private:
   static void stdinCallBack(evutil_socket_t stdin_fd, short what, void *args);
+  static void execute(std::string cmd,MainServer *server);
 };
 
 #endif
