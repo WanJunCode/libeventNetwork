@@ -313,6 +313,8 @@ TConnection::recv_framing(){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
 
+        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+
 #ifndef print_debug
         printf("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 #endif // !print_debug
