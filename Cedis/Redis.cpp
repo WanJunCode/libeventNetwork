@@ -13,6 +13,7 @@ Redis::Redis(const std::string& host, const unsigned port,const std::string& pas
 }
 
 void Redis::Connect(const std::string& host, const unsigned int port,const std::string& pass){
+    // 如果 host 服务器不可用，会卡住
     conn_ = redisConnect(host.c_str(), port);
     if (conn_->err != REDIS_OK){
         redisFree(conn_);

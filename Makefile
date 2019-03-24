@@ -19,7 +19,7 @@ all:
 
 .PHONY: clean start
 clean:
-	rm -rf $(BIN) $(OUTPUT) vgcore* core
+	rm -rf $(BIN) $(OUTPUT) vgcore* core .vscode/ipch
 
 start:
 	./$(BIN)/$(EXECUTABLE)
