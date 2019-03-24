@@ -6,7 +6,7 @@
 int main(int argc, char const *argv[]){
     UNUSED(argc);
     UNUSED(argv);
-    PosixSignal::register_signals();
+    // PosixSignal::register_signals();
     MainConfig *config = new MainConfig(CONFIG_PATH);
     MainServer server(config);
     LOG_DEBUG("***********************wanjun server start***********************\n");

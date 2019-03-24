@@ -28,7 +28,6 @@ RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
 		password_ = config->getPasswd();
 		conns_max_ = config->getMax();
 		conns_min_ = config->getMin();
-		// printf("ip [%s], port [%d], passwd [%s], max [%d], min [%d]\n",server_.data(),port_,password_.data(),conns_max_,conns_min_);
 	}else{
 		assert(false);
 	}

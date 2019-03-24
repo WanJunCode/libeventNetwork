@@ -34,7 +34,7 @@ MainServer::MainServer(MainConfig *config)
     iothreadSize_ = config->getIOThreadSize();
     backlog_ = config->getBacklog();
 
-    printf("port [%lu], maxBufferSize_ = [%lu], threadPoolSize_ = [%lu], iothreadSize_ = [%lu], backlog_ = [%lu]\n",port_,maxBufferSize_,threadPoolSize_,iothreadSize_,backlog_);
+    LOG_DEBUG("port [%lu], maxBufferSize_ = [%lu], threadPoolSize_ = [%lu], iothreadSize_ = [%lu], backlog_ = [%lu]\n",port_,maxBufferSize_,threadPoolSize_,iothreadSize_,backlog_);
     init();
 }
 
@@ -56,8 +56,11 @@ void MainServer::init(){
         thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
 
+    // bug here
     // redis_pool = make_shared<RedisPool>(config_->redisAddress(),config_->redisPort(),config_->redisPasswd(),100,5);
+    // redis_pool = make_shared<RedisPool>("localhost",6379,"",20,5);
     redis_pool = make_shared<RedisPool>(config_->redisConfig());
+
     thread_pool->enqueue(std::ref(*redis_pool));
 
     // 添加需要解析的协议种类
