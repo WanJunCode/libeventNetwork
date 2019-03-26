@@ -14,7 +14,7 @@ Process::Process(std::function<void(int)> function, int index) noexcept
     run();
 }
 
-Process::~Process() {
+Process::~Process() noexcept{
     kill(true);
     get_exit_status();
 }

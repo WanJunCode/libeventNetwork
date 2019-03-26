@@ -27,7 +27,6 @@ class MyTransport
   private:
     MainServer *server_;
     struct evconnlistener *listener_;
-    struct event_base *main_base_;
     std::mutex connMutex_;
 
     size_t backlog_;

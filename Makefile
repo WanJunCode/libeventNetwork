@@ -5,7 +5,7 @@ grpc_lib = -L/usr/local/lib `pkg-config --libs protobuf grpc++ grpc` -Wl,--no-as
 BIN = bin
 OUTPUT = output
 EXECUTABLE = Cloud-server
-CXX = g++
+CXX = clang++
 C_FLAGS := -std=c++11 -Wall -Wextra -ggdb
 
 DEBUG_CFLAGS := -std=c++11 -ggdb -Wall -ffunction-sections -O0 -Wno-format \

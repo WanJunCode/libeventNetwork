@@ -104,7 +104,7 @@ public:
     }
 
 private:
-    ECHO_HEADER_t   *header;
+    // ECHO_HEADER_t   *header;
     uint16_t        data_length;
 };
 

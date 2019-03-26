@@ -94,7 +94,7 @@ std::string getpeermac(int sockfd)
     // 定义接口的最大值
 #define MAXINTERFACES 16
     // Interface request structure
-    struct ifreq buf[MAXINTERFACES] = {0x00};
+    struct ifreq buf[MAXINTERFACES] = {};
     struct ifconf ifc;
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = (caddr_t)buf;
