@@ -57,8 +57,6 @@ public:
     void recv_framing();
     void recv();
 
-    void chishenme(std::string msg);
-
     void setHeartBeat(int heart){
         heartBeat_ = heart;
     }

@@ -6,6 +6,7 @@
 int main(int argc, char const *argv[]){
     UNUSED(argc);
     UNUSED(argv);
+    // 取消信号的处理，方便调试
     // PosixSignal::register_signals();
     MainConfig *config = new MainConfig(CONFIG_PATH);
     MainServer server(config);

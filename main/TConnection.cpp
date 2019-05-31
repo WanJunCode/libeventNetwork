@@ -7,16 +7,6 @@
 #include <stdlib.h>
 typedef unsigned char BYTE;
 
-void TConnection::chishenme(std::string msg){
-    static std::vector<std::string> menu = {"浓汁烧","烧鹅饭","煲仔饭","五谷鱼粉","排骨饭","螺蛳粉","粗粮面","黄焖鸡","混沌"};
-    srand(time(NULL));
-    int idx = rand()%(menu.size());
-    if( msg == "E59083E4BB80E4B988E59083E4BB80E4B988"){
-        LOG_DEBUG("吃什么？？？ idx = [%d] \n",idx);
-        send(socket_->getSocketFD(),menu[idx].data(),menu[idx].length(),0);
-    }
-}
-
 TConnection::TConnection(TSocket *sock, MainServer *server)
     : socket_(sock),
     server_(server),
@@ -173,7 +163,9 @@ TConnection::read_request(){
     struct evbuffer_iovec image;
     if (evbuffer_peek(input, -1, NULL, &image, 1)) {
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
-        Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
+
+        // 使用唯一指针来获得 数据包
+        std::unique_ptr<Package> pkg (server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_) );
         if (!pkg) {
             LOG_DEBUG("construct TPackage failure 数据包构造失败\n");
         } else {
@@ -184,12 +176,9 @@ TConnection::read_request(){
             auto m = pkg->innerData();
             auto length = send(socket_->getSocketFD(), m.c_str() , m.length() ,0);
             LOG_DEBUG("buffer [%s] strlenbuffer [%d] length = [%d]\n",m.data(), m.length() ,length);
+            
+            // Redis 记录数据
             record(m);
-
-#ifdef GRPC
-            server_->grpcMethod(pkg->innerData());
-#endif
-            delete pkg;
         }
     }
     // LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
@@ -318,8 +307,6 @@ TConnection::recv_framing(){
 #ifndef print_debug
         printf("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 #endif // !print_debug
-
-        chishenme(byteTohex((void *)tmp_ptr, image.iov_len));
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);

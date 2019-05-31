@@ -20,7 +20,7 @@
 #define SOCKOPT_CAST_T void         // _WIN32
 #else
 #define SOCKOPT_CAST_T char         // _Linux
-#endif 
+#endif
 #endif
 
 template <class T>
@@ -48,7 +48,7 @@ IOThread::~IOThread()
     if(base_!= NULL){
         event_base_free(base_);
     }
-    
+
     for (int i = 0; i < 2; ++i) {
         if (notificationPipeFDs_[i] >= 0) {
             if (0 != EVUTIL_CLOSESOCKET(notificationPipeFDs_[i])) {
@@ -181,14 +181,14 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
             // exit the loop
             break;
         } else { // nBytes < 0
-        
+
             if (errno != EWOULDBLOCK && errno != EAGAIN) {
                 LOG_DEBUG("TNonblocking: notifyHandler read() failed: [%d]\n",EVUTIL_SOCKET_ERROR());
                 ioThread->breakLoop(true);
                 return;
             }
             // exit the loop
-            
+
             break;
         }
     } while (true);
