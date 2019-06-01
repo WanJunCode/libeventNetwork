@@ -14,7 +14,7 @@
 #include "../System/config.h"
 
 // 日志等级 对应的 字符串，用于将日志等级转化为字符串
-const char *LogLevelName[Log::NUM_LOG_LEVELS] =
+const static char *LogLevelName[Log::NUM_LOG_LEVELS] =
 {
     "TRACE ",
     "DEBUG ",
@@ -35,7 +35,7 @@ Log::Log()
     appender->setLayout(pLayout);
     root.setAppender(appender);
     // Category 需要设置 priority 优先级
-    root.setPriority(log4cpp::Priority::INFO);
+    root.setPriority(log4cpp::Priority::DEBUG);
     out.open(LOG_FILE,std::ios::app);
 }
 
@@ -62,8 +62,9 @@ void Log::printf(LogLevel level,unsigned long pthread_id,const std::string filen
     Log::getInstance()<<timeStr<<vform(cmd,args);
     // 打印到控制台
     std::cout<<timeStr<<vform(cmd,args);
+    // root.notice(vform(cmd,args));
     // 打印到log4cpp
-    switch (level)
+    switch (int(level))
     {
     case LogLevel::TRACE:
         root.notice(vform(cmd,args));
@@ -84,6 +85,7 @@ void Log::printf(LogLevel level,unsigned long pthread_id,const std::string filen
         root.fatal(vform(cmd,args));
         break;
     default:
+        root.notice("default\n");
         break;
     }
     va_end(args);       //结束可变参数的获取
