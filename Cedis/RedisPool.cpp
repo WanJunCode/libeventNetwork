@@ -43,7 +43,7 @@ void RedisPool::init(){
 			redis->attach(shared_from_this());				// 给连接绑定连接池
 			redisVec.push_back(redis);
 		}else{
-    		LOG_ERROR("fail to create redis connection\n");
+    		LOG_ERROR("fail to create redis[%d] connection\n",i);
 		}
 	}
 }
@@ -62,6 +62,7 @@ std::shared_ptr<Redis> RedisPool::grabCedis(){
 	while(!redisVec[index]->getuseable()){
 		index = (idx++ % redisVec.size());
 	}
+	LOG_DEBUG("grab redis [%d]\n",index);
 	return redisVec[index];
 }
 
