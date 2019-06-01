@@ -17,7 +17,7 @@ void Redis::Connect(const std::string& host, const unsigned int port,const std::
     conn_ = redisConnect(host.c_str(), port);
     if (conn_->err != REDIS_OK){
         redisFree(conn_);
-        LOG_DEBUG("fail to connect redis server.\n");
+        LOG_ERROR("fail to connect redis server.\n");
     }else{
         redisReply *myreply=(redisReply *)redisCommand(conn_,"AUTH %s",pass.data());
         freeReplyObject(myreply);
@@ -140,5 +140,15 @@ bool Redis::ping(){
     }else{
         freeReplyObject(myreply);
         return true;
+    }
+}
+
+void Redis::reuse(){
+    std::shared_ptr<RedisPool> pool(pool_.lock());
+    if(pool){
+        LOG_DEBUG("move redis in redis pool\n");
+        pool->move(shared_from_this());
+    }else{
+        LOG_ERROR("weak ptr to redis pool isn't work\n");
     }
 }

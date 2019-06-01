@@ -56,7 +56,7 @@ RedisPool::~RedisPool(){
 // 如果出现所有连接都不可用的情况怎么办？
 std::shared_ptr<Redis> RedisPool::grabCedis(){
 	std::lock_guard<std::mutex> locker(mutex_);
-	static std::atomic_llong idx(1);
+	static std::atomic_llong idx(0);
 	// 有可能　llong 都使用完毕的情况
 	int index = (idx++ % redisVec.size());
 	while(!redisVec[index]->getuseable()){
@@ -75,5 +75,21 @@ void RedisPool::reuseCedis(){
 		// 这里使用 ping 会出错
 		tmp->reConnect();
 		tmp->setUseable();
+	}
+}
+
+// vector 删除策略，将要删除的idx与最后一个交换; 需要知道所在vector的index
+void RedisPool::remove(std::shared_ptr<Redis> redis){
+	if(redis == redisVec.back()){
+		redisVec.pop_back();
+		return;
+	}else{
+		for(size_t idx=0;idx<redisVec.size();++idx){
+			if(redisVec[idx]==redis){
+				swap(redisVec[idx],redisVec[redisVec.size()]);
+				redisVec.pop_back();
+				return;
+			}
+		}
 	}
 }

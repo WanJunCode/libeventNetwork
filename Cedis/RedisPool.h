@@ -29,6 +29,7 @@ public:
     
     std::shared_ptr<Redis> grabCedis();                         // 获得一个可用的 Redis::ptr_t
     void reuseCedis();
+    void remove(std::shared_ptr<Redis> redis);
 
     void move(std::shared_ptr<Redis> p){                        // 损坏的连接可以调用 该函数将自己放到 queue中
         queue.push(p);
