@@ -41,19 +41,19 @@ MainServer::MainServer(MainConfig *config)
 void MainServer::init(){
     main_base = event_base_new();
     if(main_base == NULL){
-        LOG_DEBUG("main event base new failure ...\n");
+        LOG_FATAL("MainServer event base new failure ...\n");
+        assert(false);
     }
     transport_ = make_shared<MyTransport>(this,backlog_);
     thread_pool = make_shared<ThreadPool>(POOL_SIZE);
 
     for(size_t i=0;i<iothreadSize_;i++){
-        // 使用智能指针，在析构函数中不再需要手动析构
         iothreads_.push_back(std::make_shared<IOThread>(this));
+        thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
     
     // 开启 iothread loop
     for(size_t i=0;i<iothreadSize_;i++){
-        thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
 
     // redis_pool = make_shared<RedisPool>("localhost",6379,"",20,5);
