@@ -23,6 +23,7 @@ void PosixSignal::register_signals() {
         sigignore(signal_ignore_array[i]);
 }
 
+// 忽略信号的处理
 int PosixSignal::sigignore(int sig) {
     struct sigaction sa;
     sa.sa_handler = SIG_IGN;
@@ -76,6 +77,7 @@ void PosixSignal::signalHandler(int sig) {
         signal(sig, signalHandler);
         return;
     }
+// 判断是否支持多进程
 #ifndef SUPPORT_MULTI_PROCESS
     recordCrashInfo();
 #else
@@ -84,7 +86,7 @@ void PosixSignal::signalHandler(int sig) {
     }
 #endif
 
-    LOG_DEBUG("=========Process[%d] Exit============", getpid());
+    LOG_DEBUG("============Process[%d] Exit============", getpid());
     _exit(0);
 }
 

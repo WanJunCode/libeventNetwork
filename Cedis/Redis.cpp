@@ -4,12 +4,12 @@
 #include "../main/logcpp.h"
 using namespace std;
 
-int Redis::count=0;
+int Redis::counter=0;
 
 // 构造函数
 Redis::Redis(const std::string& host, const unsigned port,const std::string& pass){
     Connect(host,port,pass);
-    count++;
+    counter++;
 }
 
 void Redis::Connect(const std::string& host, const unsigned int port,const std::string& pass){
@@ -27,7 +27,7 @@ void Redis::Connect(const std::string& host, const unsigned int port,const std::
 
 Redis::~Redis(){
     redisFree(conn_);
-    count--;
+    counter--;
 }
 
 void Redis::append(const std::vector<std::string> &commands){
@@ -77,18 +77,23 @@ bool Redis::is_valid() const{
     return conn_->err == REDIS_OK;
 }
 
+// 有待改善
 Reply Redis::run(const std::vector<std::string>& args){
-    std::unique_lock<std::mutex> locker(mutex_);            // 上锁，防止多个线程的争夺
-    if(!useable){
+    std::lock_guard<std::mutex> locker(mutex_);            // 上锁，防止多个线程的争夺
+    if(useable == false){
+        // 如果已知不可用，返回一个断开的 reply
         Reply r = Reply();
         r.setDisconn(true);
         return r;
     }
     // 断开连接后 ping 返回 null
-    if(!ping()){
+    if(ping() == false){
         useable = false;
         Reply r = Reply();
-        pool_->move(this);
+        std::shared_ptr<RedisPool> pool(pool_.lock());
+        if(pool){
+            pool->move(shared_from_this());
+        }
         r.setDisconn(true);
         return r;
     }
@@ -98,7 +103,7 @@ Reply Redis::run(const std::vector<std::string>& args){
 }
 
 Reply Redis::executeCommand(const char *format, ...){
-    std::unique_lock<std::mutex> locker(mutex_);            // 上锁，防止多个线程的争夺
+    std::lock_guard<std::mutex> locker(mutex_);            // 上锁，防止多个线程的争夺
 
     if(!useable){
         Reply r = Reply();
@@ -115,7 +120,10 @@ Reply Redis::executeCommand(const char *format, ...){
     if(r==NULL){
         useable = false;
         Reply r = Reply();
-        pool_->move(this);
+        std::shared_ptr<RedisPool> pool(pool_.lock());
+        if(pool){
+            pool->move(shared_from_this());
+        }
         r.setDisconn(true);
         return r;
     }

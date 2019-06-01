@@ -31,52 +31,46 @@ RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
 	}else{
 		assert(false);
 	}
-	init();
 }
 
-
 void RedisPool::init(){
-	for(unsigned int i=0;i<conns_min_;++i){	
-		auto conn = new Redis(server_,port_,password_);
+	for(unsigned int i=0;i<conns_min_;++i){
+		// 使用智能共享指针管理 redis 连接
+		auto conn = make_shared<Redis>(server_,port_,password_);
 		if(conn->is_valid()){								// 判断该连接是否可用
 			conn->setUseable();								// 设置为可用
-			conn->attach(this);								// 给连接绑定连接池
-			redis_vec.push_back(conn);						// 插入cedisVector队尾部
+			// shared_ptr -> weak_ptr
+			conn->attach(shared_from_this());				// 给连接绑定连接池
+			redisVec.push_back(conn);
 		}else{
-    		LOG_DEBUG("fail to create redis connection\n");
+    		LOG_ERROR("fail to create redis connection\n");
 		}
 	}
 }
 
 RedisPool::~RedisPool(){
-	while(!redis_vec.empty()){
-		auto tmp = redis_vec.back();
-		// 防止循环引用
-		redis_vec.pop_back();
-		delete tmp;
-	}
-	if(Redis::count>0){
-		LOG_DEBUG("size of redis leak [%d]\n",Redis::count);
-	}
 	LOG_DEBUG("destructure of cedis pool\n");
 }
 
-Redis *RedisPool::grabCedis(){
-	std::unique_lock<std::mutex> locker(mutex_);
-	static std::atomic_llong mid(1);
+// 使用RR方法获得redis连接
+// 如果出现所有连接都不可用的情况怎么办？
+std::shared_ptr<Redis> RedisPool::grabCedis(){
+	std::lock_guard<std::mutex> locker(mutex_);
+	static std::atomic_llong idx(1);
 	// 有可能　llong 都使用完毕的情况
-	int index = (mid++ % redis_vec.size());
-	while(!redis_vec[index]->getuseable()){
-		index = (mid++ % redis_vec.size());
+	int index = (idx++ % redisVec.size());
+	while(!redisVec[index]->getuseable()){
+		index = (idx++ % redisVec.size());
 	}
-	return redis_vec[index];
+	return redisVec[index];
 }
 
+// 将queue中的不可用redis重连
 void RedisPool::reuseCedis(){
-	bool hasCedis=false;
+	bool reuse=false;
 	// 结束连接池时　queue.weak_all() ,返回的　hasCedis 为　false
-	auto tmp = queue.pop_front(hasCedis);			// 此处是阻塞的，线程安全的 队列
-	if(hasCedis){
+	auto tmp = queue.pop_front(reuse);			// 此处是阻塞的，线程安全的 队列
+	if(reuse){
 		// 这里使用 ping 会出错
 		tmp->reConnect();
 		tmp->setUseable();

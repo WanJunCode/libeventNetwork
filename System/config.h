@@ -1,15 +1,16 @@
-#ifndef __CF_CONFIG_H
-#define __CF_CONFIG_H
+#ifndef __WJ_CONFIG_H
+#define __WJ_CONFIG_H
 
 #include <stdint.h>
 #include <string.h>
-#define INVALID_SOCKET -1
-typedef unsigned char BYTE;
 #include <assert.h>
 #include <errno.h>
 
+#define INVALID_SOCKET -1
+typedef unsigned char BYTE;
 
 #define UNUSED(x) (void)(x)
+
 #ifdef CHECK_PTHREAD_RETURN_VALUE
 
 #ifdef NDEBUG

@@ -304,10 +304,6 @@ TConnection::recv_framing(){
 
         LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 
-#ifndef print_debug
-        printf("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
-#endif // !print_debug
-
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
             LOG_DEBUG("parse one package true\n");

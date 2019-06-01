@@ -53,7 +53,7 @@ public:
   {
     return main_base;
   }
-  inline Redis *getRedis()
+  inline std::shared_ptr<Redis> getRedis()
   {
     return redis_pool->grabCedis();
   }

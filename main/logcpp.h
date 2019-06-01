@@ -21,17 +21,32 @@
 
 #define LOG_FILE "output/logcpp_file.out"
 
-// 定义了 print_debug 就会在控制台打印输出结果
-#define print_debug
-#ifdef print_debug
-    #define LOG_DEBUG(fmt,...) \
-        Log::getInstance().printf(pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
-#else
-    #define LOG_DEBUG(fmt,...) 
-#endif
-
+#define LOG_TRACE(fmt,...) \
+    Log::getInstance().printf(Log::TRACE,pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+#define LOG_DEBUG(fmt,...) \
+    Log::getInstance().printf(Log::DEBUG,pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+#define LOG_INFO(fmt,...) \
+    Log::getInstance().printf(Log::INFO,pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+#define LOG_WARN(fmt,...) \
+    Log::getInstance().printf(Log::WARN,pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+#define LOG_ERROR(fmt,...) \
+    Log::getInstance().printf(Log::ERROR,pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+#define LOG_FATAL(fmt,...) \
+    Log::getInstance().printf(Log::FATAL,pthread_self(),StripFileName(__FILE__),__LINE__,__FUNCTION__,fmt,##__VA_ARGS__);
+    
 class Log{
 public:
+    // 日志等级 枚举类型
+    enum LogLevel
+    {
+        TRACE,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL,
+        NUM_LOG_LEVELS,
+    };
     // 单例模式, 静态函数只能访问 静态类成员
     static Log& getInstance(){
         return root_logcpp;
@@ -44,9 +59,7 @@ public:
     template<typename T>
     Log& operator << (const T&);
 
-    void printf_w(const char *cmd, ...);
-    void printf_w_notime(const char *cmd, ...);
-    void printf(unsigned long pthread_id,const std::string filename,int line,const std::string function,const char *cmd,...);
+    void printf(LogLevel level,unsigned long pthread_id,const std::string filename,int line,const std::string function,const char *cmd,...);
 
 private:
     std::ofstream out;

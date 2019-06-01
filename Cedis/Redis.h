@@ -15,7 +15,7 @@ struct redisContext;
 class Reply;
 class RedisPool;
 
-class Redis{
+class Redis:public enable_shared_from_this<Redis>{
 public:
     typedef std::shared_ptr<Redis> ptr_t;
     inline static ptr_t create(const std::string& host="localhost",
@@ -43,7 +43,7 @@ public:
         redisReconnect(conn_);
     }
 
-    void attach(RedisPool* pool){
+    void attach(shared_ptr<RedisPool> pool){
         pool_=pool;
     }
 
@@ -62,13 +62,13 @@ private:
     std::vector<Reply> get_replies(unsigned int count);
 
 public:
-    static int count;
+    static int counter;
 
 private:
-    std::mutex mutex_; 
-    RedisPool* pool_;                      // 绑定的连接池
+    std::mutex mutex_;
+    weak_ptr<RedisPool> pool_;              // 绑定的连接池,弱引用
     volatile bool useable;                  // 判断当前连接是否可用
-    redisContext *conn_;                        // hiredis 内部的 connection 
+    redisContext *conn_;                    // hiredis 内部的 connection 
 };
 
 

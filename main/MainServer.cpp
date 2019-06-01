@@ -28,11 +28,11 @@ MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t ba
 MainServer::MainServer(MainConfig *config)
     :config_(config){
     selectIOThread_ = 0;
-    port_ = config->getPort();
-    maxBufferSize_ = config->getBufferSize();
-    threadPoolSize_ = config->getThreadPoolSize();
-    iothreadSize_ = config->getIOThreadSize();
-    backlog_ = config->getBacklog();
+    port_ = config_->getPort();
+    maxBufferSize_ = config_->getBufferSize();
+    threadPoolSize_ = config_->getThreadPoolSize();
+    iothreadSize_ = config_->getIOThreadSize();
+    backlog_ = config_->getBacklog();
 
     LOG_DEBUG("port [%lu], maxBufferSize_ = [%lu], threadPoolSize_ = [%lu], iothreadSize_ = [%lu], backlog_ = [%lu]\n",port_,maxBufferSize_,threadPoolSize_,iothreadSize_,backlog_);
     init();
@@ -56,11 +56,9 @@ void MainServer::init(){
         thread_pool->enqueue(std::ref(*iothreads_[i]));
     }
 
-    // bug here
-    // redis_pool = make_shared<RedisPool>(config_->redisAddress(),config_->redisPort(),config_->redisPasswd(),100,5);
     // redis_pool = make_shared<RedisPool>("localhost",6379,"",20,5);
     redis_pool = make_shared<RedisPool>(config_->redisConfig());
-
+    redis_pool->init();
     thread_pool->enqueue(std::ref(*redis_pool));
 
     // 添加需要解析的协议种类
@@ -181,14 +179,7 @@ void MainServer::heartBeat(){
 }
 
 void MainServer::execute(std::string cmd,MainServer *server){
-    if (cmd == "size"){
-#ifndef print_debug
-        printf("connection vector size %lu \n", server->activeTConnection.size());
-        printf("connection queue size %lu \n", server->connectionQueue.size());
-        printf("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
-        printf("transport socketqueue size = %d\n",server->transport_->getSocketQueue());
-#endif // !
-
+    if (cmd == "list"){
         LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
         LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
         LOG_DEBUG("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
