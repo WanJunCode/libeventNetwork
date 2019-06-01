@@ -17,7 +17,6 @@ RedisPool::RedisPool(	std::string server,
 	conns_max_(conns_max),
 	conns_min_(conns_min),
 	stop(false){
-	init();
 }
 
 RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
@@ -29,6 +28,7 @@ RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
 		conns_max_ = config->getMax();
 		conns_min_ = config->getMin();
 	}else{
+		LOG_FATAL("redis Pool config not give\n");
 		assert(false);
 	}
 }
@@ -36,12 +36,12 @@ RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
 void RedisPool::init(){
 	for(unsigned int i=0;i<conns_min_;++i){
 		// 使用智能共享指针管理 redis 连接
-		auto conn = make_shared<Redis>(server_,port_,password_);
-		if(conn->is_valid()){								// 判断该连接是否可用
-			conn->setUseable();								// 设置为可用
+		auto redis = make_shared<Redis>(server_,port_,password_);
+		if(redis->is_valid()){								// 判断该连接是否可用
+			redis->setUseable();								// 设置为可用
 			// shared_ptr -> weak_ptr
-			conn->attach(shared_from_this());				// 给连接绑定连接池
-			redisVec.push_back(conn);
+			redis->attach(shared_from_this());				// 给连接绑定连接池
+			redisVec.push_back(redis);
 		}else{
     		LOG_ERROR("fail to create redis connection\n");
 		}
