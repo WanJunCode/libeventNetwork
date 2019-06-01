@@ -62,8 +62,8 @@ public:
     void printf(LogLevel level,unsigned long pthread_id,const std::string filename,int line,const std::string function,const char *cmd,...);
 
 private:
+    mutable std::mutex mutex_;
     std::ofstream out;
-    std::mutex mutex_;
     log4cpp::Category& root;
 };
 
