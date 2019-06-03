@@ -47,6 +47,7 @@ public:
     }
 };
 
+// Condition 类的构造函数必须要 Mutex
 class Condition: noncopyable{
 private:
     Mutex&          mutex_;
