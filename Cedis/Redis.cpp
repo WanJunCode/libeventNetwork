@@ -142,13 +142,3 @@ bool Redis::ping(){
         return true;
     }
 }
-
-void Redis::reuse(){
-    std::shared_ptr<RedisPool> pool(pool_.lock());
-    if(pool){
-        LOG_DEBUG("move redis in redis pool\n");
-        pool->move(shared_from_this());
-    }else{
-        LOG_ERROR("weak ptr to redis pool isn't work\n");
-    }
-}

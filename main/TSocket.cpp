@@ -86,7 +86,6 @@ TSocket::TSocket(const std::string &host, int port)
 TSocket::~TSocket()
 {
     close();
-    LOG_DEBUG("TSocket 析构函数\n");
 }
 
 std::string getpeermac(int sockfd)

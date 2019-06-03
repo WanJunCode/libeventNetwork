@@ -54,8 +54,6 @@ public:
         return useable;
     }
 
-    void reuse();
-
     bool ping();
 
 private:

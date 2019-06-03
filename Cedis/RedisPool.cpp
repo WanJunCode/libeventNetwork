@@ -78,17 +78,14 @@ void RedisPool::reuseCedis(){
 	}
 }
 
-// vector 删除策略，将要删除的idx与最后一个交换; 需要知道所在vector的index
+// vector 删除策略，将要删除的idx与最后一个交换; 需要知道所在vector的index，不过需要对redis再增加一个index属性
 void RedisPool::remove(std::shared_ptr<Redis> redis){
 	if(redis == redisVec.back()){
 		redisVec.pop_back();
-		return;
 	}else{
 		for(size_t idx=0;idx<redisVec.size();++idx){
 			if(redisVec[idx]==redis){
-				swap(redisVec[idx],redisVec[redisVec.size()]);
-				redisVec.pop_back();
-				return;
+				redisVec.erase(redisVec.begin()+idx);
 			}
 		}
 	}
