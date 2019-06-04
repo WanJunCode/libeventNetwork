@@ -9,6 +9,7 @@
 #include <string.h>
 #include <algorithm>
 #include <chrono>
+#include <memory>
 
 
 #define MAXBUFFERSIZE (1024*16*16)
@@ -55,9 +56,9 @@ void MainServer::init(){
         threadPool_->run(std::bind(&IOThread::runInThread,iothreads_.back().get()));
     }
 
-    redis_pool = make_shared<RedisPool>(config_->redisConfig());
-    redis_pool->init();
-    threadPool_->run(std::bind(&RedisPool::runInThread,redis_pool.get()));
+    redisPool = make_shared<RedisPool>(config_->redisConfig());
+    redisPool->init();
+    threadPool_->run(std::bind(&RedisPool::runInThread,redisPool.get()));
 
     // 添加需要解析的协议种类
     protocol_ = make_shared<MultipleProtocol>();
@@ -71,7 +72,7 @@ MainServer::~MainServer(){
     for(size_t i=0;i<iothreads_.size();i++){
         iothreads_[i]->breakLoop(false);
     }
-    redis_pool->exit();
+    redisPool->exit();
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
     for (size_t i = 0; i < activeTConnection.size(); i++){
@@ -85,12 +86,12 @@ MainServer::~MainServer(){
         delete conn;
     }
 
+    threadPool_->stop();
     event_free(ev_stdin);
     event_base_free(main_base);
 }
 
-void MainServer::serve()
-{
+void MainServer::serve(){
     LOG_DEBUG("serve() ... start \n");
     // 添加一个 控制台输入事件
     ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdinCallBack, this);

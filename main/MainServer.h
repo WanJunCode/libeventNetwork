@@ -42,9 +42,6 @@ public:
     bool isActive(TConnection *conn) const;
     void heartBeat();
 
-    std::shared_ptr<ThreadPool> getPool(){
-      return thread_pool;
-    }
     std::shared_ptr<Protocol> getProtocol(){
       return protocol_;
     }
@@ -52,7 +49,7 @@ public:
       return main_base;
     }
     inline std::shared_ptr<Redis> getRedis(){
-      return redis_pool->grabCedis();
+      return redisPool->grabCedis();
     }
     inline int getBufferSize() const{
       return maxBufferSize_;
@@ -72,8 +69,8 @@ private:
     size_t backlog_;
     std::mutex connMutex; // 处理连接时，以及返回连接时候
 
-    std::shared_ptr<ThreadPool> thread_pool; // 线程池
-    std::shared_ptr<RedisPool> redis_pool;   // redis 连接池
+    std::unique_ptr<MThreadPool> threadPool_;
+    std::shared_ptr<RedisPool> redisPool;   // redis 连接池
     std::shared_ptr<Protocol> protocol_;     // 协议解析器
     std::shared_ptr<MyTransport> transport_; // 监听器
 
@@ -82,7 +79,6 @@ private:
     // 活动的连接
     std::vector<TConnection *> activeTConnection;
     std::queue<TConnection *> connectionQueue;
-    std::unique_ptr<MThreadPool> threadPool_;
 
 private:
     static void stdinCallBack(evutil_socket_t stdin_fd, short what, void *args);

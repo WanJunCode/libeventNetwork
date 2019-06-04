@@ -17,6 +17,7 @@ MThreadPool::MThreadPool(const std::string& nameArg)
 MThreadPool::~MThreadPool(){
     // 如果正在运行则 stop
     if (running_){
+        LOG_INFO("muduo thread pool stop\n");
         stop();
     }
     LOG_INFO("muduo thread pool desc\n");
@@ -47,6 +48,7 @@ void MThreadPool::stop(){
         notEmpty_.notifyAll();      // 广播让所有的子线程结束
     }
     for (auto& thr : threads_){
+        LOG_INFO("muduo thread pool join\n");
         thr->join();
     }
 }
