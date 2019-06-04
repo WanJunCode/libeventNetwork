@@ -15,7 +15,7 @@ public:
 
     void createNotificationPipe();
     void start();
-    void operator ()();
+    void runInThread();
 
     // Returns the send-fd for task complete notifications.
     evutil_socket_t getNotificationSendFD() const {

@@ -35,7 +35,7 @@ public:
         queue.push(p);
     }
 
-    void operator()(){
+    void runInThread(){
         while(!stop){
             reuseCedis();
         }

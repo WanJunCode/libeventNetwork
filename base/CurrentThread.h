@@ -16,6 +16,7 @@ namespace CurrentThread
   extern __thread int t_tidStringLength;
   extern __thread const char* t_threadName; // 用于记录当前线程的状态
 
+  pid_t gettid();
   void cacheTid();
 
   inline int tid(){

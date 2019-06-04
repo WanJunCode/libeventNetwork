@@ -45,21 +45,19 @@ void MainServer::init(){
         assert(false);
     }
     transport_ = make_shared<MyTransport>(this,backlog_);
-    thread_pool = make_shared<ThreadPool>(POOL_SIZE);
+    threadPool_.reset(new MThreadPool("MainThreadPool"));
+    threadPool_->setMaxQueueSize(40);
+    threadPool_->start(POOL_SIZE);
 
+    iothreads_.reserve(iothreadSize_);
     for(size_t i=0;i<iothreadSize_;i++){
         iothreads_.push_back(std::make_shared<IOThread>(this));
-        thread_pool->enqueue(std::ref(*iothreads_[i]));
-    }
-    
-    // 开启 iothread loop
-    for(size_t i=0;i<iothreadSize_;i++){
+        threadPool_->run(std::bind(&IOThread::runInThread,iothreads_.back().get()));
     }
 
-    // redis_pool = make_shared<RedisPool>("localhost",6379,"",20,5);
     redis_pool = make_shared<RedisPool>(config_->redisConfig());
     redis_pool->init();
-    thread_pool->enqueue(std::ref(*redis_pool));
+    threadPool_->run(std::bind(&RedisPool::runInThread,redis_pool.get()));
 
     // 添加需要解析的协议种类
     protocol_ = make_shared<MultipleProtocol>();
@@ -67,14 +65,12 @@ void MainServer::init(){
     protocol_->addProtocol(std::make_shared<EchoProtocol>());
 }
 
-MainServer::~MainServer()
-{
+MainServer::~MainServer(){
     LOG_DEBUG("main server destructure ...\n");
 
     for(size_t i=0;i<iothreads_.size();i++){
         iothreads_[i]->breakLoop(false);
     }
-
     redis_pool->exit();
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
@@ -90,7 +86,6 @@ MainServer::~MainServer()
     }
 
     event_free(ev_stdin);
-    // 释放 mainserver 的 eventbase
     event_base_free(main_base);
 }
 

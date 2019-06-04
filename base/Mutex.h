@@ -3,6 +3,8 @@
 
 #include <pthread.h>    // mutex condition_variable
 #include <stdint.h>
+#include <assert.h>
+#include "CurrentThread.h"
 #include "noncopyable.h"
 
 // class Mutex
@@ -13,24 +15,55 @@
 class Mutex: noncopyable{
 private:
     pthread_mutex_t mutex;
+    pid_t holder_;
 public:
-    Mutex(){
+    Mutex()
+    :holder_(0){
         pthread_mutex_init(&mutex,NULL);
     }
     ~Mutex(){
+        assert(holder_ == 0);
         pthread_mutex_destroy(&mutex);
     }
     void lock(){
         pthread_mutex_lock(&mutex);
+        assignHolder();
     }
     void unlock(){
+        unassignHolder();
         pthread_mutex_unlock(&mutex);
     }
-    bool trylock(){
-        return 0 == pthread_mutex_trylock(&mutex);
+    // must be called when locked, i.e. for assertion
+    bool isLockedByThisThread() const{
+        return holder_ == CurrentThread::tid();
+    }
+    void assertLocked() const{
+        assert(isLockedByThisThread());
     }
     pthread_mutex_t* getPthreadMutex(){
         return &mutex;
+    }
+private:
+    friend class Condition;
+    // 类中类，守护未被分配； 创建 UnassignGuard 传入 MutexLock 构造后，将 holder清除
+    class UnassignGuard : noncopyable{
+    public:
+        explicit UnassignGuard(Mutex& owner)
+        : owner_(owner){
+            owner_.unassignHolder();
+        }
+        ~UnassignGuard(){
+            owner_.assignHolder();
+        }
+    private:
+        Mutex& owner_;
+    };
+    void assignHolder(){
+        // 赋值，使用线程id
+        holder_ = CurrentThread::tid();
+    }
+    void unassignHolder(){
+        holder_ = 0;
     }
 };
 
@@ -50,7 +83,7 @@ public:
 // Condition 类的构造函数必须要 Mutex
 class Condition: noncopyable{
 private:
-    Mutex&          mutex_;
+    Mutex&          mutex_; // 引用
     pthread_cond_t  pcond_;
 public:
     explicit Condition(Mutex& mutex)
@@ -61,7 +94,19 @@ public:
         pthread_cond_destroy(&pcond_);
     }
     void wait(){
+        // 条件变量等待的时候 mutex 不会被上锁
+        Mutex::UnassignGuard ug(mutex_);
         pthread_cond_wait(&pcond_,mutex_.getPthreadMutex());
+    }
+    bool waitForSeconds(double seconds){
+        struct timespec abstime;
+        clock_gettime(CLOCK_REALTIME, &abstime);
+        const int64_t kNanoSecondsPerSecond = 1000000000;
+        int64_t nanoseconds = static_cast<time_t>(seconds * kNanoSecondsPerSecond);
+        abstime.tv_sec += static_cast<time_t>((abstime.tv_nsec + nanoseconds) / kNanoSecondsPerSecond);
+        abstime.tv_nsec = static_cast<long>((abstime.tv_nsec + nanoseconds) % kNanoSecondsPerSecond);
+        Mutex::UnassignGuard ug(mutex_);
+        return ETIMEDOUT == pthread_cond_timedwait(&pcond_, mutex_.getPthreadMutex(), &abstime); 
     }
     void notify(){
         pthread_cond_signal(&pcond_);

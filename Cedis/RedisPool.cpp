@@ -49,6 +49,9 @@ void RedisPool::init(){
 }
 
 RedisPool::~RedisPool(){
+	if(stop == false){
+		exit();
+	}
 	LOG_DEBUG("destructure of cedis pool\n");
 }
 
