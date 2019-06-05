@@ -48,7 +48,6 @@ void MThreadPool::stop(){
         notEmpty_.notifyAll();      // 广播让所有的子线程结束
     }
     for (auto& thr : threads_){
-        LOG_INFO("muduo thread pool join\n");
         thr->join();
     }
 }
@@ -112,7 +111,7 @@ void MThreadPool::runInThread(){
             // std::funtional<void()>
             Task task(take());
             if (task){
-              task();
+                task();
             }
         }
     }catch (const std::exception& ex){

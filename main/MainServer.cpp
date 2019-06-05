@@ -11,10 +11,14 @@
 #include <chrono>
 #include <memory>
 
-
 #define MAXBUFFERSIZE (1024*16*16)
 
 typedef unsigned char BYTE;
+
+void hello(){
+    LOG_DEBUG("hello world\n");
+}
+
 MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t backlog)
     :port_(port),
     selectIOThread_(0),
@@ -43,13 +47,13 @@ void MainServer::init(){
     main_base = event_base_new();
     if(main_base == NULL){
         LOG_FATAL("MainServer event base new failure ...\n");
-        assert(false);
     }
     transport_ = make_shared<MyTransport>(this,backlog_);
     threadPool_.reset(new MThreadPool("MainThreadPool"));
     threadPool_->setMaxQueueSize(40);
     threadPool_->start(POOL_SIZE);
 
+    // 创建io子线程,并加入线程池中运行
     iothreads_.reserve(iothreadSize_);
     for(size_t i=0;i<iothreadSize_;i++){
         iothreads_.push_back(std::make_shared<IOThread>(this));
@@ -60,6 +64,13 @@ void MainServer::init(){
     redisPool->init();
     threadPool_->run(std::bind(&RedisPool::runInThread,redisPool.get()));
 
+    timerMgr_ = make_shared<TimerManager>();
+    threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
+    auto timer = timerMgr_->grabTimer();
+    if(timer){
+        timer->start(hello,10,Timer::TIMER_PERSIST);   
+    }
+    
     // 添加需要解析的协议种类
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());
@@ -72,7 +83,12 @@ MainServer::~MainServer(){
     for(size_t i=0;i<iothreads_.size();i++){
         iothreads_[i]->breakLoop(false);
     }
-    redisPool->exit();
+
+    if(redisPool)
+        redisPool->exit();
+    
+    if(timerMgr_)
+        timerMgr_->stop();
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
     for (size_t i = 0; i < activeTConnection.size(); i++){
@@ -85,7 +101,8 @@ MainServer::~MainServer(){
         connectionQueue.pop();
         delete conn;
     }
-
+    
+    // 线程池手动调用结束,防止程序退出时死锁
     threadPool_->stop();
     event_free(ev_stdin);
     event_base_free(main_base);

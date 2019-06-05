@@ -16,15 +16,12 @@
 
 MyTransport::MyTransport(MainServer *server,size_t backlog)
     : server_(server),
-     backlog_(backlog)
-{
+     backlog_(backlog){
     LOG_DEBUG("initialize transport\n");
 }
 
-MyTransport::~MyTransport()
-{
-    if (listener_ != NULL)
-    {
+MyTransport::~MyTransport(){
+    if (listener_ != NULL){
         evconnlistener_free(listener_);
         listener_ = NULL;
     }
@@ -33,16 +30,14 @@ MyTransport::~MyTransport()
 
     // 清除  socket queue
     LOG_DEBUG("transport size = [%lu]\n", socketQueue.size());
-    while (!socketQueue.empty())
-    {
+    while (!socketQueue.empty()){
         TSocket *tmp = socketQueue.front();
         socketQueue.pop();
         delete tmp;
     }
 }
 
-void MyTransport::listen(int port)
-{
+void MyTransport::listen(int port){
     struct sockaddr_in server_addr;
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -54,7 +49,7 @@ void MyTransport::listen(int port)
 
     if (!listener_){
         perror("create listener error...\n");
-        assert(0);
+        assert(false);
     }
 
     // 设置 listen fd 为 nonblocking 
@@ -64,8 +59,7 @@ void MyTransport::listen(int port)
     // evutil_make_listen_socket_reuseable(listener_fd);
 }
 
-TSocket *MyTransport::accept()
-{
+TSocket *MyTransport::accept(){
     std::lock_guard<std::mutex> locker(connMutex_);
     TSocket *sock = socketQueue.front();
     socketQueue.pop();
@@ -74,8 +68,7 @@ TSocket *MyTransport::accept()
 
 // static
 void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t client_fd,
-                            struct sockaddr *addr, int socklen, void *args)
-{
+                            struct sockaddr *addr, int socklen, void *args){
     UNUSED(listener);
     UNUSED(addr);
     UNUSED(socklen);
@@ -85,22 +78,18 @@ void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t cli
         std::lock_guard<std::mutex> locker(transport->connMutex_);
 
         auto iter = transport->activeSocket.find(client_fd);
-        if (iter != transport->activeSocket.end())
-        {
+        if (iter != transport->activeSocket.end()){
             perror("client 已经处于 active 状态 ...\n");
             transport->activeSocket.erase(iter);
         }
 
         // client fd 设置为 非阻塞
         evutil_make_socket_nonblocking(client_fd);
-        if (transport->socketQueue.empty())
-        {
+        if (transport->socketQueue.empty()){
             // 为空 新建 TSocket
             TSocket *sock = new TSocket(client_fd);
             transport->socketQueue.push(sock);
-        }
-        else
-        {
+        }else{
             transport->socketQueue.front()->setSocketFD(client_fd);
         }
         transport->activeSocket.insert(std::pair<evutil_socket_t, TSocket *>(client_fd, transport->socketQueue.front()));
@@ -109,8 +98,7 @@ void MyTransport::do_accept(struct evconnlistener *listener, evutil_socket_t cli
     transport->server_->handlerConn(args);
 }
 
-void MyTransport::returnTSocket(TSocket *sock)
-{
+void MyTransport::returnTSocket(TSocket *sock){
     LOG_DEBUG("transport return TSocket \n");
     {
         // 从 active map 中删除
@@ -131,12 +119,10 @@ void MyTransport::returnTSocket(TSocket *sock)
     }
 }
 
-int MyTransport::getActiveSize()
-{
+int MyTransport::getActiveSize(){
     return activeSocket.size();
 }
 
-int MyTransport::getSocketQueue()
-{
+int MyTransport::getSocketQueue(){
     return socketQueue.size();
 }

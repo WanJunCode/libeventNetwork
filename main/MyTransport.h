@@ -10,9 +10,8 @@
 class MainServer;
 class TSocket;
 
-class MyTransport
-{
-  public:
+class MyTransport{
+public:
     explicit MyTransport(MainServer *server,size_t backlog = 10);
     ~MyTransport();
     void listen(int port);
@@ -21,10 +20,10 @@ class MyTransport
     int getActiveSize();
     int getSocketQueue();
 
-  public:
+public:
     static void do_accept(struct evconnlistener *listener, evutil_socket_t client_fd, struct sockaddr *addr, int socklen, void *args);
 
-  private:
+private:
     MainServer *server_;
     struct evconnlistener *listener_;
     std::mutex connMutex_;

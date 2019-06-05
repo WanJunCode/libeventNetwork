@@ -10,6 +10,7 @@
 #include "../Cedis/RedisPool.h"
 #include "../Package/MultipleProtocol.h"
 #include "../base/ThreadPool.h"
+#include "../base/TimerManager.h"
 
 // #include "grpc/client.h"
 
@@ -73,6 +74,7 @@ private:
     std::shared_ptr<RedisPool> redisPool;   // redis 连接池
     std::shared_ptr<Protocol> protocol_;     // 协议解析器
     std::shared_ptr<MyTransport> transport_; // 监听器
+    std::shared_ptr<TimerManager> timerMgr_;
 
     // 使用共享智能指针
     std::vector<std::shared_ptr<IOThread>> iothreads_;
