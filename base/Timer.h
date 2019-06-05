@@ -4,6 +4,7 @@
 
 #include <event.h>
 #include <functional>
+#include <memory>
 
 class TimerManager;
 class Timer{
@@ -12,7 +13,7 @@ public:
     enum eTimerType { TIMER_ONCE, TIMER_PERSIST } ;
 
 public:
-    Timer(TimerManager *tmMgr);
+    Timer(std::shared_ptr<TimerManager> tmMgr);
     ~Timer();
 public:
     void start(std::function<void()> task, unsigned interval, eTimerType ntype = TIMER_ONCE);
@@ -23,7 +24,7 @@ public:
     void reset();
 
 protected:
-    TimerManager *tmMgr_;
+    std::weak_ptr<TimerManager> tmMgr_;
     std::function<void()> task_;
     eTimerType type_;
     unsigned interval_;

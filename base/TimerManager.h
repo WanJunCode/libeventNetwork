@@ -34,6 +34,7 @@ public:
     inline void timerMaxSize(int limit = TIMER_STACK_SIZE) {
         timerStackLimit_ = limit;
     };
+    void init();
     std::shared_ptr<Timer> grabTimer();
     void stop();
 public:

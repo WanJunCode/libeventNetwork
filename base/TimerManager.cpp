@@ -11,11 +11,7 @@ TimerManager::TimerManager()
     if(base == NULL){
         LOG_FATAL("timer manager event base new failure\n");
     }
-    // 共享指针存入栈中
-    for (int i = 0; i < 10; ++i) {
-        timerStack_.push(std::make_shared<Timer>(this));
-    }
-    LOG_DEBUG("timer manager init\n");
+
 }
 
 TimerManager::~TimerManager() {
@@ -25,6 +21,13 @@ TimerManager::~TimerManager() {
     LOG_DEBUG("timer manager des\n");
 }
 
+void TimerManager::init(){
+    // 共享指针存入栈中
+    for (int i = 0; i < 10; ++i) {
+        timerStack_.push(std::make_shared<Timer>(shared_from_this()));
+    }
+    LOG_DEBUG("timer manager init\n");
+}
 void TimerManager::stop(){
     bexit_ = true;
     std::lock_guard<std::mutex> locker(mutex_);
@@ -43,6 +46,7 @@ void TimerManager::stop(){
 
 // static
 void TimerManager::timeoutCallback(int fd, short event, void *args) {
+    LOG_DEBUG("TimerManager::timeoutCallback 回调\n");
     Timer *tmProc = (Timer *)args;
     if (tmProc) {
         tmProc->run();
@@ -55,7 +59,7 @@ void TimerManager::timeoutCallback(int fd, short event, void *args) {
 std::shared_ptr<Timer> TimerManager::grabTimer(){
     std::shared_ptr<Timer> timer = nullptr;
     if (timerStack_.empty()) {
-        timer = std::make_shared<Timer>(this);
+        timer = std::make_shared<Timer>(shared_from_this());
         vtimer_.push_back(timer);
     } else {
         std::lock_guard<std::mutex> locker(mutex_);
@@ -75,16 +79,16 @@ void TimerManager::addTimer(Timer *timer) {
         /* Initalize one event */
         if (Timer::TIMER_ONCE == timer->type_) {
             LOG_DEBUG("添加一次性时间器\n");
-            timer_ev = event_new(base, -1, EV_PERSIST,TimerManager::timeoutCallback, timer);
-        } else {
-            LOG_DEBUG("添加持续时间器\n");
             timer_ev = event_new(base, -1, EV_READ,TimerManager::timeoutCallback, timer);
+        } else {
+            timer_ev = event_new(base, -1, EV_PERSIST,TimerManager::timeoutCallback, timer);
         }
 
         struct timeval tv;
         evutil_timerclear(&tv);
         tv.tv_sec = (int)(timer->interval_);
         tv.tv_usec = (timer->interval_ - tv.tv_sec) * 1000000;
+        LOG_DEBUG("tv.tv_sec = [%d]\n",tv.tv_sec);
 
         event_add(timer_ev, &tv);
         // 将 timer 和 event 的关系保存
@@ -100,7 +104,6 @@ void TimerManager::returnTimer(Timer *timer) {
     for(size_t idx = 0;idx<vtimer_.size();++idx){
         if(vtimer_[idx].get()==timer){
             LOG_DEBUG("idx = [%d] is timer\n",idx);
-            event_del(&(timer->tm_));
             if(timerStack_.size()<TIMER_STACK_SIZE){
                 timerStack_.push(vtimer_[idx]);
                 LOG_DEBUG("reuse timer [%p]\n",timer);

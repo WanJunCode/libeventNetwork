@@ -68,7 +68,7 @@ void MainServer::init(){
     threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
     auto timer = timerMgr_->grabTimer();
     if(timer){
-        timer->start(hello,10,Timer::TIMER_PERSIST);   
+        timer->start(hello,10,Timer::TIMER_ONCE);   
     }
     
     // 添加需要解析的协议种类
