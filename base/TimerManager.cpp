@@ -31,7 +31,7 @@ void TimerManager::stop(){
     while (vtimer_.size()) {
         std::shared_ptr<Timer> ref = vtimer_.back();
         // 结束在 event 上注册的定时器
-        ref->stop();
+        ref->reset();
         removeEvent(ref.get());
         vtimer_.pop_back();
     }
