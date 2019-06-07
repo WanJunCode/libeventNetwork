@@ -57,7 +57,6 @@ IOThread::~IOThread()
             notificationPipeFDs_[i] = INVALID_SOCKET;
         }
     }
-    LOG_DEBUG("iothread 析构函数\n");
 }
 
 void IOThread::start()
@@ -91,7 +90,6 @@ void IOThread::start()
 
 void IOThread::runInThread()
 {
-    LOG_DEBUG("start iothread event base loop\n");
     start();
     event_base_dispatch(base_);
 }

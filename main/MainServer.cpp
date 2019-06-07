@@ -65,12 +65,15 @@ void MainServer::init(){
     threadPool_->run(std::bind(&RedisPool::runInThread,redisPool.get()));
 
     timerMgr_ = make_shared<TimerManager>();
-    threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
+    timerMgr_->init();
+
     auto timer = timerMgr_->grabTimer();
     if(timer){
-        timer->start(hello,10,Timer::TIMER_ONCE);   
+        timer->start(hello,10,Timer::TIMER_PERSIST);   
     }
-    
+
+    threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
+
     // 添加需要解析的协议种类
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());

@@ -5,6 +5,9 @@
 // stack 中保存可以重复使用的 timer
 
 // 定时器使用完后 要么删除在 vector 中的 shared_ptr ,或者回收到stack 中
+// timer 不能使用 shared_ptr 管理
+
+// 解决dispatch延时的办法,在base上注册一个 event,然后在 timer manager->stop 中触发回调,在dispatch线程中breakloop
 
 #ifndef __CF_TIMRE_MANAGER_H
 #define __CF_TIMRE_MANAGER_H
@@ -35,7 +38,7 @@ public:
         timerStackLimit_ = limit;
     };
     void init();
-    std::shared_ptr<Timer> grabTimer();
+    Timer *grabTimer();
     void stop();
 public:
     // 线程执行函数
@@ -44,19 +47,21 @@ public:
     void returnTimer(Timer *timer); // timer use this 将自己回收或者删除
 
     static void timeoutCallback(int fd, short event, void *arg);
-
+    static void eventBreakLoop(int fd, short event, void *arg);
 private:
     void removeEvent(Timer *timer);
 
 private:
     friend class Timer;
+    int breakloop[2];
+    struct event *ev_breakloop;
     struct event_base *base;
     std::vector<timer_event> eventVec_;
     std::mutex mutex_;
     std::atomic<bool> bexit_;
     std::condition_variable expired_cond_;
-    std::vector<std::shared_ptr<Timer> > vtimer_;
-    std::stack<std::shared_ptr<Timer> > timerStack_;
+    std::vector<Timer *> vtimer_;
+    std::stack<Timer *> timerStack_;
     size_t timerStackLimit_;
 };
 
