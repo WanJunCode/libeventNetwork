@@ -9,6 +9,7 @@
 #include "MainConfig.h"
 #include "../Cedis/RedisPool.h"
 #include "../Package/MultipleProtocol.h"
+#include "../Package/Adapter/Adapter.h"
 #include "../base/ThreadPool.h"
 #include "../base/TimerManager.h"
 
@@ -43,6 +44,10 @@ public:
     bool isActive(TConnection *conn) const;
     void heartBeat();
 
+    void run(MThreadPool::Task task){
+      threadPool_->run(task);
+    }
+
     std::shared_ptr<Protocol> getProtocol(){
       return protocol_;
     }
@@ -54,6 +59,9 @@ public:
     }
     inline int getBufferSize() const{
       return maxBufferSize_;
+    }
+    inline Adapter *getAdapter(){
+      return adapter_;
     }
 
 private:
@@ -75,6 +83,8 @@ private:
     std::shared_ptr<Protocol> protocol_;     // 协议解析器
     std::shared_ptr<MyTransport> transport_; // 监听器
     std::shared_ptr<TimerManager> timerMgr_;
+    
+    Adapter *adapter_;
 
     // 使用共享智能指针
     std::vector<std::shared_ptr<IOThread>> iothreads_;

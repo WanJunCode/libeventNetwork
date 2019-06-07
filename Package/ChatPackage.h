@@ -4,6 +4,7 @@
 #include "Package.h"
 #include <assert.h>
 #include "../main/logcpp.h"
+#include "string"
 
 class ChatPackage:public Package{
 public:
@@ -37,8 +38,11 @@ public:
     ChatPackage(CRYPT_TYPE crypt, DATA_TYPE TYPE, void *payload, size_t length);
     ~ChatPackage(){};
 
-    virtual void debug() const override{
+    virtual void debug() override{
         LOG_DEBUG("chat package debug\n");
+        std::string msg;
+        msg.append((char *)data(),length());
+        LOG_DEBUG("chat message : [%s]\n",msg.data());
     }
 public:
     // 判断 payload 指针指向的内存区域是否是一个完整的数据包
@@ -87,7 +91,7 @@ public:
     EchoPackage(void *payload, size_t length);
     ~EchoPackage();
 
-    virtual void debug() const override{
+    virtual void debug() override{
         LOG_DEBUG("echo package debug\n");
         uint8_t *tmp_ptr = (uint8_t *)Package::getRawData();
         LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)(tmp_ptr + sizeof(ECHO_HEADER_t)), data_length).c_str());
@@ -102,7 +106,7 @@ public:
         str.append((char *)(tmp_ptr + sizeof(ECHO_HEADER_t)),data_length);
         return str;
     }
-
+    
 private:
     // ECHO_HEADER_t   *header;
     uint16_t        data_length;

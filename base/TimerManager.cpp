@@ -45,7 +45,6 @@ void TimerManager::init(){
 void TimerManager::stop(){
     bexit_ = true;
 
-
     std::lock_guard<std::mutex> locker(mutex_);
     while (vtimer_.size()) {
         Timer *ref = vtimer_.back();
@@ -60,11 +59,14 @@ void TimerManager::stop(){
         timerStack_.pop();
         delete ref;
     }
-    
+    if(Timer::counter.get()!=0){
+        LOG_ERROR("timer memory leak\n");
+    }else{
+        LOG_INFO("timer all destory\n");
+    }
+
     const char msg[] = "exit";
     write(breakloop[1],msg,sizeof(msg));
-
-    LOG_DEBUG("timer manager stop event loop break\n");
     expired_cond_.notify_one();
 }
 
@@ -94,18 +96,14 @@ void TimerManager::addTimer(Timer *timer) {
         } else {
             timer_ev = event_new(base, -1, EV_PERSIST,TimerManager::timeoutCallback, timer);
         }
-
         struct timeval tv;
         evutil_timerclear(&tv);
         tv.tv_sec = (int)(timer->interval_);
         tv.tv_usec = (timer->interval_ - tv.tv_sec) * 1000000;
-        LOG_DEBUG("tv.tv_sec = [%d]\n",tv.tv_sec);
-
         event_add(timer_ev, &tv);
         // 将 timer 和 event 的关系保存
         eventVec_.push_back( std::pair<Timer *,struct event *>(timer,timer_ev));
     }
-
     // 告诉dispatch线程开始监听事件
     expired_cond_.notify_one();
 }
@@ -128,8 +126,6 @@ void TimerManager::removeEvent(Timer *timer){
     for(size_t idx = 0;idx<eventVec_.size();idx++){
         if(eventVec_[idx].first == timer){
             event_del(eventVec_[idx].second);
-            event_free(eventVec_[idx].second);
-            LOG_DEBUG("释放 event\n");
             eventVec_.erase(eventVec_.begin()+idx);
             break;
         }
@@ -144,7 +140,6 @@ void TimerManager::eventBreakLoop(int fd, short event, void *arg){
     LOG_DEBUG("回调函数 read length [%d]\n",length);
     event_base_loopbreak(base);
 }
-
 
 // static
 void TimerManager::timeoutCallback(int fd, short event, void *args) {

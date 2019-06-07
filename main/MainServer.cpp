@@ -69,7 +69,7 @@ void MainServer::init(){
 
     auto timer = timerMgr_->grabTimer();
     if(timer){
-        timer->start(hello,10,Timer::TIMER_PERSIST);   
+        timer->start(std::bind(&MainServer::heartBeat,this),60,Timer::TIMER_PERSIST);
     }
 
     threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
@@ -78,6 +78,8 @@ void MainServer::init(){
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());
     protocol_->addProtocol(std::make_shared<EchoProtocol>());
+
+    adapter_ = new Adapter();
 }
 
 MainServer::~MainServer(){
@@ -103,6 +105,10 @@ MainServer::~MainServer(){
         TConnection *conn = connectionQueue.front();
         connectionQueue.pop();
         delete conn;
+    }
+
+    if(adapter_){
+        delete adapter_;
     }
     
     // 线程池手动调用结束,防止程序退出时死锁

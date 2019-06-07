@@ -7,6 +7,31 @@
 #include <stdlib.h>
 typedef unsigned char BYTE;
 
+class ProcessTask{
+public:
+    ProcessTask(Adapter *adapter,Package *package)
+    :adapter_(adapter)
+    ,package_(package){
+        LOG_DEBUG("process task 初始化\n");
+    };
+
+    ~ProcessTask(){
+        LOG_DEBUG("process task 销毁\n")
+        delete package_;
+    }
+
+    void run(){
+        adapter_->process(package_);
+    };
+
+private:
+    Adapter *adapter_;
+    Package *package_;
+};
+
+void process(Adapter *adapter,std::unique_ptr<Package> package){
+}
+
 TConnection::TConnection(TSocket *sock, MainServer *server)
     : socket_(sock),
     server_(server),
@@ -164,21 +189,17 @@ TConnection::read_request(){
     if (evbuffer_peek(input, -1, NULL, &image, 1)) {
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
 
-        // 使用唯一指针来获得 数据包
-        std::unique_ptr<Package> pkg (server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_) );
+        // 使用唯一指针来获得 数据包,防止数据包的多次复制
+        Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
         if (!pkg) {
             LOG_DEBUG("construct TPackage failure 数据包构造失败\n");
         } else {
-            // 是否是线程池处理
-            // ChatPackage *cpkg = dynamic_cast<ChatPackage *>(pkg);
-
-            pkg->debug();
-            auto m = pkg->innerData();
-            auto length = send(socket_->getSocketFD(), m.c_str() , m.length() ,0);
-            LOG_DEBUG("buffer [%s] strlenbuffer [%d] length = [%d]\n",m.data(), m.length() ,length);
-            
-            // Redis 记录数据
-            record(m);
+            // 如果 processtask 放入线程池中运行,不能使用栈变量,生存周期不够
+            std::shared_ptr<ProcessTask> tasker(new ProcessTask(server_->getAdapter(),pkg));
+            // 直接处理的情况
+            // server_->getAdapter()->process(std::move(pkg));
+            // 线程池处理
+            server_->run(std::bind(&ProcessTask::run,tasker));
         }
     }
     // LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
@@ -189,33 +210,28 @@ TConnection::read_request(){
 }
 
 MainServer *
-TConnection::getServer()
-{
+TConnection::getServer(){
     return server_;
 }
 
 TSocket *
-TConnection::getSocket()
-{
+TConnection::getSocket(){
     return socket_;
 }
 
 void 
-TConnection::close()
-{
+TConnection::close(){
     // if(socket_)
     //     socket_->close();
 
-    if(bev != NULL)
-    {
+    if(bev != NULL){
         // 释放 TSocket 上建立的 bufferevent
         bufferevent_free(bev);
         bev = NULL;
     }
 
     // 还是需要 MainServer 去处理 TConnection
-    if(server_!=NULL)
-    {
+    if(server_!=NULL){
         LOG_DEBUG("TConnection close return tconnection\n");
         server_->returnTConnection(this);
     }
@@ -244,15 +260,13 @@ TConnection::heartBeat(){
 }
 
 // static
-void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
-{
+void TConnection::error_cb(struct bufferevent *bev, short what, void *args){
     UNUSED(bev);
 
     // client disconnection
     TConnection *conn = (TConnection *)args;
 
-    if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF))
-    {
+    if (what & (BEV_EVENT_ERROR | BEV_EVENT_EOF)){
         LOG_DEBUG("client bufferevent eof...\n");
     }
 
@@ -262,8 +276,7 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args)
 }
 
 // static
-void TConnection::read_cb(struct bufferevent *bev, void *args)
-{
+void TConnection::read_cb(struct bufferevent *bev, void *args){
     UNUSED(bev);
 
     TConnection *conn = (TConnection*)args;

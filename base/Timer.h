@@ -5,6 +5,7 @@
 #include <event.h>
 #include <functional>
 #include <memory>
+#include "Atomic.h"
 
 class TimerManager;
 class Timer{
@@ -30,6 +31,8 @@ protected:
     unsigned interval_;
     struct event tm_;
     bool owned_;
+
+    static AtomicInt64 counter;
 };
 
 #endif

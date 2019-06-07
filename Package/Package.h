@@ -11,6 +11,10 @@
 typedef unsigned char BYTE;
 
 class Package{
+protected:
+    std::string     rawData;
+    std::string     factoryCode;
+    size_t          rawDataLength;
 public:
     explicit Package():
         rawDataLength(0){
@@ -38,18 +42,13 @@ public:
         return (0==rawDataLength);
     }
 
-    virtual void debug() const{
+    virtual void debug(){
         LOG_DEBUG("package debug\n");
     }
 
     virtual std::string innerData() {
         return "";
     }
-
-protected:
-    std::string rawData;
-    std::string factoryCode;
-    size_t      rawDataLength;
 };
 
 

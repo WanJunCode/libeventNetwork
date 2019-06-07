@@ -1,16 +1,19 @@
 #include "Timer.h"
 #include "TimerManager.h"
 #include "../main/logcpp.h"
+#include "Atomic.h"
+
+AtomicInt64 Timer::counter;
 
 Timer::Timer(std::shared_ptr<TimerManager> tmMgr)
     : task_(nullptr)
     , owned_(true) {
     tmMgr_ = tmMgr;
-    LOG_DEBUG("timer init\n");
+    counter.increment();
 }
 
 Timer::~Timer() {
-    LOG_DEBUG("timer destory\n");
+    counter.decrement();
 }
 
 void Timer::start(std::function<void()> task, unsigned interval, eTimerType etype) {
