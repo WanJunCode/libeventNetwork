@@ -11,9 +11,10 @@
 typedef unsigned char BYTE;
 
 class Package{
+public:
+    std::string     factoryCode;
 protected:
     std::string     rawData;
-    std::string     factoryCode;
     size_t          rawDataLength;
 public:
     explicit Package():

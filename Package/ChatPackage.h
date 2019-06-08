@@ -6,6 +6,9 @@
 #include "../main/logcpp.h"
 #include "string"
 
+#define CHAT_CODE "WanJunChat"
+#define ECHO_CODE "Echo"
+
 class ChatPackage:public Package{
 public:
     typedef struct CHAT_HEADER_t{
@@ -39,7 +42,6 @@ public:
     ~ChatPackage(){};
 
     virtual void debug() override{
-        LOG_DEBUG("chat package debug\n");
         std::string msg;
         msg.append((char *)data(),length());
         LOG_DEBUG("chat message : [%s]\n",msg.data());
@@ -65,9 +67,9 @@ public:
     }
 
 private:
-    CHAT_HEADER_t *head_;
-    CHAT_TAIL_t *tail_;
-    uint16_t data_length;
+    CHAT_HEADER_t   *head_;
+    CHAT_TAIL_t     *tail_;
+    uint16_t        data_length;
 };
 
 class ChatProtocol:public Protocol{
@@ -80,6 +82,9 @@ public:
     virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant);
     virtual Package *getOnePackage(BYTE * package, size_t dataSize);
 };
+
+
+
 
 class EchoPackage : public Package{
 public:

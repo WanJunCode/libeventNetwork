@@ -2,7 +2,7 @@
 #include <arpa/inet.h>
 #include "CRC.h"
 
-#define FACTORY_WANJUN_CODE "WanJun"
+
 #define CHAT_LENGTH ( sizeof(ChatPackage::CHAT_HEADER_t) + sizeof(ChatPackage::CHAT_TAIL_t) )
 
 // head =========== data ============ tail
@@ -11,13 +11,13 @@ ChatPackage::ChatPackage(void *payload, size_t length)
     data_length(length - CHAT_LENGTH){
     head_ = (CHAT_HEADER_t *)payload;
     tail_ = (CHAT_TAIL_t *)((uint8_t *)payload + sizeof(CHAT_HEADER_t) + data_length);
-    factoryCode = FACTORY_WANJUN_CODE;
+    factoryCode = CHAT_CODE;
 }
 
 ChatPackage::ChatPackage(CRYPT_TYPE crypt, DATA_TYPE type, void *payload, size_t length)
     :Package(),
     data_length(length){
-    factoryCode = FACTORY_WANJUN_CODE;
+    factoryCode = CHAT_CODE;
 
     rawDataLength = data_length + CHAT_LENGTH;
     
@@ -117,7 +117,7 @@ EchoPackage::EchoPackage(void *payload, size_t length)
     BYTE *ptr = (BYTE *)payload;
     EchoPackage::ECHO_HEADER_t *header = (EchoPackage::ECHO_HEADER_t *)ptr;
     data_length = ntohs(header->length);
-
+    factoryCode = ECHO_CODE;
 }
 
 EchoPackage::~EchoPackage(){

@@ -2,6 +2,7 @@
 #include "logcpp.h"
 #include "../Package/ChatPackage.h"
 
+#include "../Package/Adapter/AdapterMap.h"
 #include <string.h>
 #include <vector>
 #include <stdlib.h>
@@ -200,6 +201,9 @@ TConnection::read_request(){
             // server_->getAdapter()->process(std::move(pkg));
             // 线程池处理
             server_->run(std::bind(&ProcessTask::run,tasker));
+
+            // 单例模式有问题
+            AdapterMap::getInstance().queryAdapter(pkg->factoryCode);
         }
     }
     // LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);

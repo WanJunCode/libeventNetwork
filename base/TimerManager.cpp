@@ -125,7 +125,9 @@ void TimerManager::returnTimer(Timer *timer) {
 void TimerManager::removeEvent(Timer *timer){
     for(size_t idx = 0;idx<eventVec_.size();idx++){
         if(eventVec_[idx].first == timer){
-            event_del(eventVec_[idx].second);
+            // event_del(eventVec_[idx].second);
+            // event 需要使用 event_free 释放,否则会内存泄漏
+            event_free(eventVec_[idx].second);
             eventVec_.erase(eventVec_.begin()+idx);
             break;
         }
