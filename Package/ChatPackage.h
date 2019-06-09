@@ -3,26 +3,23 @@
 
 #include "Package.h"
 #include <assert.h>
-#include "../main/logcpp.h"
 #include "string"
-
-#define CHAT_CODE "WanJunChat"
-#define ECHO_CODE "Echo"
+#include "../main/logcpp.h"
 
 class ChatPackage:public Package{
 public:
     typedef struct CHAT_HEADER_t{
-        uint8_t     identify;
-        uint16_t    length;
-        uint8_t     version;
-        uint8_t     type;
-        uint8_t     crypt;
-        uint8_t     retain;
+        uint8_t     identify;           // 标识
+        uint16_t    length;             // 数据长度
+        uint8_t     version;            // 版本
+        uint8_t     type;               // 类型
+        uint8_t     crypt;              // 加密类型
+        uint8_t     retain;             // 保留
     }__attribute__((packed)) CHAT_HEADER_t;
 
     typedef struct _CHAT_TAIL_t{
-        uint16_t    crc;
-        uint8_t     tail;
+        uint16_t    crc;                // 冗余校验
+        uint8_t     tail;               // 数据尾部标识
     }__attribute__((packed)) CHAT_TAIL_t;
 
     typedef enum{
@@ -78,50 +75,6 @@ public:
         Protocol(headler){};
     virtual ~ChatProtocol(){};
 
-public:
-    virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant);
-    virtual Package *getOnePackage(BYTE * package, size_t dataSize);
-};
-
-
-
-
-class EchoPackage : public Package{
-public:
-    typedef struct ECHO_HEADER_t{
-        uint8_t     identity;   //0x7E
-        uint16_t    length;     //两个字节
-    }__attribute__((packed)) ECHO_HEADER_t;
-
-    EchoPackage(void *payload, size_t length);
-    ~EchoPackage();
-
-    virtual void debug() override{
-        LOG_DEBUG("echo package debug\n");
-        uint8_t *tmp_ptr = (uint8_t *)Package::getRawData();
-        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)(tmp_ptr + sizeof(ECHO_HEADER_t)), data_length).c_str());
-        std::string innerdata;
-        innerdata.append((char *)(tmp_ptr + sizeof(ECHO_HEADER_t)),data_length);
-        LOG_DEBUG("inner data [%s]\n",innerdata.c_str());
-    }
-
-    virtual std::string innerData() override{
-        uint8_t *tmp_ptr = (uint8_t *)Package::getRawData();
-        std::string str;
-        str.append((char *)(tmp_ptr + sizeof(ECHO_HEADER_t)),data_length);
-        return str;
-    }
-    
-private:
-    // ECHO_HEADER_t   *header;
-    uint16_t        data_length;
-};
-
-class EchoProtocol : public Protocol{
-public:
-    explicit EchoProtocol(ProtocolEventHandler *headler=nullptr):
-        Protocol(headler){};
-    virtual ~EchoProtocol(){};
 public:
     virtual bool parseOnePackage(BYTE * package, size_t dataSize, size_t &framePos, size_t &frameSize, size_t &readWant);
     virtual Package *getOnePackage(BYTE * package, size_t dataSize);

@@ -8,6 +8,7 @@ EchoAdapter::~EchoAdapter(){
     
 }
 
-void EchoAdapter::process(Package *package){
+Package *EchoAdapter::adapter(Package *package){
     package->debug();
+    return nullptr;
 } 

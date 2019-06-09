@@ -60,9 +60,7 @@ public:
     inline int getBufferSize() const{
       return maxBufferSize_;
     }
-    inline Adapter *getAdapter(){
-      return adapter_;
-    }
+
 
 private:
     struct event *ev_stdin; // 处理命令行输入
@@ -84,7 +82,6 @@ private:
     std::shared_ptr<MyTransport> transport_; // 监听器
     std::shared_ptr<TimerManager> timerMgr_;
     
-    Adapter *adapter_;
 
     // 使用共享智能指针
     std::vector<std::shared_ptr<IOThread>> iothreads_;

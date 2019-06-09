@@ -10,9 +10,10 @@ typedef unsigned char BYTE;
 
 class ProcessTask{
 public:
-    ProcessTask(Adapter *adapter,Package *package)
+    ProcessTask(Adapter *adapter,Package *package,TConnection *client)
     :adapter_(adapter)
-    ,package_(package){
+    ,package_(package)
+    ,client_(client){
         LOG_DEBUG("process task 初始化\n");
     };
 
@@ -22,12 +23,17 @@ public:
     }
 
     void run(){
-        adapter_->process(package_);
+        auto out = adapter_->adapter(package_);
+        if(out){
+            client_->transMessage(out);
+            delete out;
+        }
     };
 
 private:
-    Adapter *adapter_;
-    Package *package_;
+    Adapter     *adapter_;
+    Package     *package_;
+    TConnection *client_;
 };
 
 void process(Adapter *adapter,std::unique_ptr<Package> package){
@@ -134,13 +140,11 @@ TConnection::transition()
 {
     switch(appstate){
         case AppState::TRANS_INIT:
-            // LOG_DEBUG("trans init\n");
             appstate = AppState::APP_INIT;
             bufferevent_enable(bev,EV_READ | EV_WRITE | EV_PERSIST);
             transition();
             break;
         case AppState::APP_INIT:
-            // LOG_DEBUG("app init\n");
             socketState = SocketState::SOCKET_RECV_FRAMING;
             appstate = AppState::APP_READ_FRAME_SIZE;
             bufferevent_setwatermark(bev, EV_READ, 0, maxBufferSize_);
@@ -148,7 +152,6 @@ TConnection::transition()
             workSocket();
             break;
         case AppState::APP_READ_FRAME_SIZE:
-            // LOG_DEBUG("app read frame size\n");
             // 已经读取到了一个完整的数据包的大小
             // Move into read request state
             if (0==readWant_) {
@@ -193,20 +196,19 @@ TConnection::read_request(){
         // 使用唯一指针来获得 数据包,防止数据包的多次复制
         Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
         if (!pkg) {
-            LOG_DEBUG("construct TPackage failure 数据包构造失败\n");
+            LOG_ERROR("construct TPackage failure 数据包构造失败\n");
         } else {
-            // 如果 processtask 放入线程池中运行,不能使用栈变量,生存周期不够
-            std::shared_ptr<ProcessTask> tasker(new ProcessTask(server_->getAdapter(),pkg));
-            // 直接处理的情况
-            // server_->getAdapter()->process(std::move(pkg));
-            // 线程池处理
-            server_->run(std::bind(&ProcessTask::run,tasker));
-
-            // 单例模式有问题
-            AdapterMap::getInstance().queryAdapter(pkg->factoryCode);
+            // 适配器处理
+            auto adapter = AdapterMap::getInstance().queryAdapter(pkg->factoryCode);
+            if(adapter){
+                // 如果 processtask 放入线程池中运行,不能使用栈变量,生存周期不够
+                std::shared_ptr<ProcessTask> tasker(new ProcessTask(adapter.get(),pkg,this));
+                server_->run(std::bind(&ProcessTask::run,tasker));
+            }else{
+                LOG_ERROR("factory code [%s] don't match adapters\n",pkg->factoryCode.data());
+            }
         }
     }
-    // LOG_DEBUG("after construct one package framesize [%d]\n",frameSize_);
     evbuffer_drain(input, frameSize_);
     // The application is now on the task to finish
     appstate = AppState::APP_INIT;
@@ -323,7 +325,6 @@ TConnection::recv_framing(){
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
-            LOG_DEBUG("parse one package true\n");
             if(framePos > 0){
                 LOG_DEBUG("frame position [%d] greater than zero\n",framePos);
                 evbuffer_drain(input,framePos);
@@ -335,11 +336,14 @@ TConnection::recv_framing(){
             // 没收接收到有用的数据包，则丢弃多余的数据
             evbuffer_drain(input,framePos);
         }
-
-        // std::shared_ptr<ChatPackage> pkg = make_shared<ChatPackage>(ChatPackage::CRYPT_UNKNOW,ChatPackage::DATA_STRING,image.iov_base,image.iov_len);
-        // record(pkg.get());
-    } else {
-        LOG_DEBUG("evbuffer_peek end\n");
     }
-    // LOG_DEBUG("recv framing end\n");
+}
+
+bool TConnection::transMessage(Package *out) {
+    if (NULL != out) {
+        if (0 == bufferevent_write(bev, out->getRawData(), out->getRawDataLength())) {
+            return true;
+        }
+    }
+    return false;
 }

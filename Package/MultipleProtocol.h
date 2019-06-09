@@ -20,7 +20,7 @@ public:
     virtual void addProtocol(std::shared_ptr<Protocol> protocol) override;
 
 private:
-    Protocol_t protocols_;
+    Protocol_t protocols_;  // 存储协议的容器
 };
 
 #endif // !WANJUN_MULTIPLE_PROTOCOL

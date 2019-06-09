@@ -8,6 +8,9 @@
 #include <string>
 #include <memory>
 
+#define CHAT_CODE "WanJunChat"
+#define ECHO_CODE "Echo"
+
 typedef unsigned char BYTE;
 
 class Package{

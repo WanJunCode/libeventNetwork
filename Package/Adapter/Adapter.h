@@ -9,15 +9,15 @@
 #ifndef WJ_ADAPTER
 #define WJ_ADAPTER
 #include "../Package.h"
+#include "Process.h"
 
 class Adapter{
 public:
     Adapter();
     virtual ~Adapter();
 
-    virtual void process(Package *package){
-        package->debug();
-    };
+    // 纯虚函数
+    virtual Package *adapter(Package *package) = 0;
 };
 
 #endif

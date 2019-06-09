@@ -9,6 +9,7 @@
 class TSocket;
 class MainServer;
 class IOThread;
+class Package;
 
 /// Three states for sockets: recv frame size, recv data, and send mode
 enum class SocketState { SOCKET_RECV_FRAMING, SOCKET_RECV, SOCKET_SEND };
@@ -56,6 +57,7 @@ public:
     void workSocket();
     void recv_framing();
     void recv();
+    bool transMessage(Package *out); 
 
     void setHeartBeat(int heart){
         heartBeat_ = heart;

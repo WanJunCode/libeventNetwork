@@ -12,8 +12,7 @@ public:
     EchoAdapter();
     ~EchoAdapter();
 
-    void process(Package *package) override;
-
+    Package *adapter(Package *package) override;
 };
 
 #endif // !CHAT_ADAPTER

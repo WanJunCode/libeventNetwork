@@ -2,6 +2,7 @@
 #include "logcpp.h"
 #include "IOThread.h"
 #include "../Package/ChatPackage.h"
+#include "../Package/EchoPackage.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -14,10 +15,6 @@
 #define MAXBUFFERSIZE (1024*16*16)
 
 typedef unsigned char BYTE;
-
-void hello(){
-    LOG_DEBUG("hello world\n");
-}
 
 MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t backlog)
     :port_(port),
@@ -67,19 +64,12 @@ void MainServer::init(){
     timerMgr_ = make_shared<TimerManager>();
     timerMgr_->init();
 
-    auto timer = timerMgr_->grabTimer();
-    if(timer){
-        timer->start(std::bind(&MainServer::heartBeat,this),60,Timer::TIMER_PERSIST);
-    }
-
     threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
 
     // 添加需要解析的协议种类
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());
     protocol_->addProtocol(std::make_shared<EchoProtocol>());
-
-    adapter_ = new Adapter();
 }
 
 MainServer::~MainServer(){
@@ -107,10 +97,6 @@ MainServer::~MainServer(){
         delete conn;
     }
 
-    if(adapter_){
-        delete adapter_;
-    }
-    
     // 线程池手动调用结束,防止程序退出时死锁
     threadPool_->stop();
     event_free(ev_stdin);

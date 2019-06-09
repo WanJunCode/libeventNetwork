@@ -3,17 +3,15 @@
 
 #include "Adapter.h"
 
-class Process;
-
+// 线程安全是因为没有对变量进行修改
 class ChatAdapter : public Adapter{
 private:
-
+    std::map<std::string,std::shared_ptr<Process> > processMap;
 public:
     ChatAdapter();
     ~ChatAdapter();
 
-    void process(Package *package) override;
-
+    Package *adapter(Package *package) override;
 };
 
 #endif // !CHAT_ADAPTER
