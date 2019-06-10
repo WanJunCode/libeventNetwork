@@ -57,6 +57,7 @@
         "unordered_set": "cpp",
         "bitset": "cpp",
         "complex": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "*.ipp": "cpp"
     }
 }

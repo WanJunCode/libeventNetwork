@@ -1,0 +1,46 @@
+user table 
+{
+    id  int primary key,
+    age int
+    passwd varchar(30)
+    email  varchar(30)
+
+}
+
+注册 signin
+{
+    "cmd":"signin",
+    "email":"wanjuncode@163.com",
+    "passwd":"wanjun123"
+}
+
+注册业务流程
+client 发起注册请求,给予email
+server 返回id / email 已经被注册
+
+注册成功
+{"cmd":"signin","id":"104544"}
+注册失败
+{"cmd":"signin","id":""}
+
+
+登录业务流程
+client 发送id 和 passwd
+server 验证账号返回  success failure
+
+登录 signup
+
+client{
+    "cmd":"signup",
+    "id":"104544",
+    "passwd":"wanjun123"
+}
+
+server{
+    "cmd":"signup",
+    "status": false / true
+}
+
+
+发送数据到 id
+{"cmd":"message","id":"xxxxx","message":"wanjun123"}
