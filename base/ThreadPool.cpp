@@ -59,7 +59,7 @@ size_t MThreadPool::queueSize() const{
 
 // 存入新的任务
 void MThreadPool::run(Task task){
-    LOG_DEBUG("thread pool run 新的任务\n");
+    // LOG_DEBUG("thread pool run 新的任务\n");
     // 如果是单线程(子线程容器为空)，直接运行 task
     if (threads_.empty()){
         task();

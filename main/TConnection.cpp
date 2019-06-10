@@ -14,7 +14,7 @@ public:
     :adapter_(adapter)
     ,package_(package)
     ,client_(client){
-        LOG_DEBUG("process task 初始化\n");
+        // LOG_DEBUG("process task 初始化\n");
     };
 
     ~ProcessTask(){
@@ -181,7 +181,7 @@ TConnection::transition()
 
 void 
 TConnection::read_request(){
-    LOG_DEBUG("读取到了一个完整的数据包 开始处理数据包\n");
+    // LOG_DEBUG("读取到了一个完整的数据包 开始处理数据包\n");
     // 读取到了一个完整的数据包　｜｜　第二次读取到数据包剩余数据时
     // We are done reading the request, package the read buffer into transport
     // and get back some data from the dispatch function
@@ -324,7 +324,7 @@ TConnection::recv_framing(){
         LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
 
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
-            LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
+            // LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
             if(framePos > 0){
                 LOG_DEBUG("frame position [%d] greater than zero\n",framePos);
                 evbuffer_drain(input,framePos);
