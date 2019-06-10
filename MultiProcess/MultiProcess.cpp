@@ -21,16 +21,16 @@ MultiProcess::~MultiProcess() {
     }
 }
 
-// 父进程 新建 Process ， 插入 child_
-std::shared_ptr<Process> MultiProcess::fork(std::function<void(int)> function, int index) noexcept {
+// 父进程 新建 WProcess ， 插入 child_
+std::shared_ptr<WProcess> MultiProcess::fork(std::function<void(int)> function, int index) noexcept {
     if (pid_ != getpid()) {
         // 非父进程不可以使用 fork
         printf("process[%d] can't use this method [fork] parent[%d]", getpid(), pid_);
     } else {
-        // Process 构造函数中调用 run , 完成 fork() 调用
-        std::shared_ptr<Process> proc(new Process(function, index));
+        // WProcess 构造函数中调用 run , 完成 fork() 调用
+        std::shared_ptr<WProcess> proc(new WProcess(function, index));
         if (pid_ == getpid()) {
-            child_.insert(std::pair<pid_t, std::shared_ptr<Process> >(proc->get_id(), proc));
+            child_.insert(std::pair<pid_t, std::shared_ptr<WProcess> >(proc->get_id(), proc));
             return proc;
         }
     }

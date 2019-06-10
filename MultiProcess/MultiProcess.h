@@ -3,10 +3,10 @@
 
 #include <map>
 #include <memory>
-#include "Process.h"
+#include "WProcess.h"
 
 class MultiProcess {
-    typedef std::map< pid_t, std::shared_ptr<Process> > args_t;
+    typedef std::map< pid_t, std::shared_ptr<WProcess> > args_t;
 public:
     // 单例模式
     static MultiProcess& getInstance() {
@@ -16,7 +16,7 @@ public:
     ~MultiProcess();
 
 public:
-    virtual std::shared_ptr<Process> fork(std::function<void(int)> function, int index) noexcept;
+    virtual std::shared_ptr<WProcess> fork(std::function<void(int)> function, int index) noexcept;
 public:
     void killChildren();
     void checkChildren();
@@ -37,7 +37,7 @@ private:
     MultiProcess & operator=(const MultiProcess &) = delete;
 private:
     pid_t pid_;
-    std::map< pid_t, std::shared_ptr<Process> > child_;  // map
+    std::map< pid_t, std::shared_ptr<WProcess> > child_;  // map
 };
 
 #endif

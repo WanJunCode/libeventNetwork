@@ -4,11 +4,11 @@
 #include <functional>
 
 // 进程类
-class Process {
+class WProcess {
     friend class MultiProcess;
 public:
-    Process(std::function<void(int)> function, int index) noexcept;
-    virtual ~Process() noexcept;
+    WProcess(std::function<void(int)> function, int index) noexcept;
+    virtual ~WProcess() noexcept;
 public:
     ///Get the process id of the started process.
     inline pid_t get_id() const noexcept {

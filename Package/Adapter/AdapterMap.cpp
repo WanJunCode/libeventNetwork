@@ -1,7 +1,6 @@
 #include "AdapterMap.h"
 #include "../../main/logcpp.h"
 
-#define ARRAY_SIZE(array)    (sizeof(array)/sizeof(*(array)))
 
 // AdapterMap 通过 adapterArry[] 获取不同的 适配器
 static struct {

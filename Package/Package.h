@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
+#include <jsoncpp/json/reader.h>
+#include <jsoncpp/json/value.h>
+
+#define ARRAY_SIZE(array)    (sizeof(array)/sizeof(*(array)))
 
 #define CHAT_CODE "WanJunChat"
 #define ECHO_CODE "Echo"

@@ -1,4 +1,4 @@
-#include "Process.h"
+#include "WProcess.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -7,19 +7,19 @@
 #include <sys/wait.h>
 
 
-Process::Process(std::function<void(int)> function, int index) noexcept
+WProcess::WProcess(std::function<void(int)> function, int index) noexcept
     : pid_(0)
     , func_(function)
     , index_(index) {
     run();
 }
 
-Process::~Process() noexcept{
+WProcess::~WProcess() noexcept{
     kill(true);
     get_exit_status();
 }
 
-void Process::run() {
+void WProcess::run() {
     // 调用 system fork 函数，从此时 进程一分为二
     pid_t pid =fork();
     if (pid < 0) { //error in fork!
@@ -40,7 +40,7 @@ void Process::run() {
     }
 }
 
-int Process::get_exit_status() noexcept {
+int WProcess::get_exit_status() noexcept {
     if (pid_ <= 0)
         return -1;
 
@@ -54,7 +54,7 @@ int Process::get_exit_status() noexcept {
 }
 
 // 尝试获得 子进程退出的 status
-bool Process::try_get_exit_status(int &exit_status) noexcept {
+bool WProcess::try_get_exit_status(int &exit_status) noexcept {
     if (pid_ <= 0)
         return false;
 
@@ -67,12 +67,12 @@ bool Process::try_get_exit_status(int &exit_status) noexcept {
     return true;
 }
 
-void Process::kill() noexcept {
-    Process::kill(pid_);
+void WProcess::kill() noexcept {
+    WProcess::kill(pid_);
 }
 
 // static
-void Process::kill(pid_t id) noexcept {
+void WProcess::kill(pid_t id) noexcept {
     if (id <= 0)
         return;
 
