@@ -3,6 +3,7 @@
 #include "IOThread.h"
 #include "../Package/ChatPackage.h"
 #include "../Package/EchoPackage.h"
+#include "../Mysql/MysqlPool.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -61,6 +62,14 @@ void MainServer::init(){
     redisPool->init();
     threadPool_->run(std::bind(&RedisPool::runInThread,redisPool.get()));
 
+    // Mysql Pool
+    auto mysqlPool = MysqlPool::getInstance();
+    mysqlPool->setParameter("localhost","root","wanjun","test_db",3306,NULL,0,3);
+
+    auto conn = mysqlPool->grab();
+    mysqlPool->release(conn);
+    // threadPool_->run(std::bind(&MysqlPool::runInThread,mysqlPool));
+
     timerMgr_ = make_shared<TimerManager>();
     timerMgr_->init();
 
@@ -70,6 +79,7 @@ void MainServer::init(){
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());
     protocol_->addProtocol(std::make_shared<EchoProtocol>());
+
 }
 
 MainServer::~MainServer(){

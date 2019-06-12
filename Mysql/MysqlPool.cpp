@@ -1,144 +1,136 @@
 #include "MysqlPool.h"
 #include "../main/logcpp.h"
 
-MysqlPool::MysqlPool(const std::string &server,
-                       unsigned int port,
-                       const std::string &db_name,
-                       const std::string &user,
-                       const std::string &password,
-                       unsigned int keeplive,
-                       unsigned int maxConn)
-    : server_(server)
-    , db_(db_name)
-    , user_(user)
-    , password_(password)
-    , port_(port)
-    , keeplive_(keeplive)
-    , conns_max_(maxConn){
+// 忘记 将 conn 初始化为 NULL 导致abort
+MysqlConn::MysqlConn()
+	:conn(NULL){
+	conn = mysql_init(conn);
+}
 
+MysqlConn::~MysqlConn(){
+	if(conn){
+		mysql_close(conn);
+	}
+	LOG_DEBUG("mysql dtor\n");
+}
+
+bool MysqlConn::connect(const char *host,const char *user,const char *passwd,const char *db,unsigned int port,const char *unix_socket,unsigned long clientflag){
+	if(mysql_real_connect(conn,host,user,passwd,db,port,unix_socket,clientflag)){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+MysqlConn::queryResult MysqlConn::execute(const char *sql){
+		std::map<const std::string,std::vector<const char*> > results;
+		if (conn) {
+				if (mysql_query(conn,sql) == 0) {
+					// 获得并存储返回的查询结果
+					MYSQL_RES *res = mysql_store_result(conn);
+					if (res) {
+							MYSQL_FIELD *field;
+							while ((field = mysql_fetch_field(res))) {
+								results.insert(make_pair(field->name,std::vector<const char*>()));
+							}
+							MYSQL_ROW row;
+							while ((row = mysql_fetch_row(res))) {
+								unsigned int i = 0;
+								for (std::map<const std::string,std::vector<const char*> >::iterator it = results.begin();
+										it != results.end(); ++it) {
+										(it->second).push_back(row[i++]);
+								}     
+							}
+							mysql_free_result(res);
+					}else{
+							LOG_ERROR("mysql result [%s]\n",mysql_error(conn));
+			}
+			} else {
+					LOG_ERROR("mysql query failure [%s]\n",mysql_error(conn));
+			}
+		} else {
+				LOG_ERROR("mysql isn't connect [%s]\n",mysql_error(conn));
+		}
+		return results;
 }
 
 
-MysqlPool::~MysqlPool() {
-    clear();
-    for (std::vector<mysqlpp::Connection*>::iterator iter = resumMysql_.begin(); iter != resumMysql_.end(); ++iter) {
-        delete *iter;
-    }
+///////////////////////////////////////////////////////////////////////////
+/*
+ *有参的单例函数，用于第一次获取连接池对象，初始化数据库信息。
+ */
+MysqlPool* MysqlPool::getInstance() {
+	static MysqlPool mysqlpool_object;           //类的对象
+	return &mysqlpool_object;
+}
+			 
+MysqlPool::MysqlPool() {
+	//初始化数据库
+	if (0 != mysql_library_init(0, NULL, NULL)){
+		LOG_WARN("mysql library init failure\n");
+		abort();
+	}
 }
 
-void MysqlPool::runInThread() {
-    bool stat = false;
-    while (true) {
-        std::string sql = sqlString_.pop_front(stat);// 阻塞
-        if (!stat) {
-            LOG_ERROR("SQL queue empty.\n");
-            continue;
-        }
-        mysqlpp::Connection::thread_start();
-        try {
-            // Go get a free connection from the pool, or create a new one
-            // if there are no free conns yet.  Uses safe_grab() to get a
-            // connection from the pool that will be automatically returned
-            // to the pool when this loop iteration finishes.
-            mysqlpp::ScopedConnection cp(*this, true);
-            if (!cp) {
-                LOG_ERROR("Failed to get a connection from the pool!\n");
-            } else {
-                // Use a higher level of transaction isolation than MySQL
-                // offers by default.  This trades some speed for more
-                // predictable behavior.  We've set it to affect all
-                // transactions started through this DB server connection,
-                // so it affects the next block, too, even if we don't
-                // commit this one.
-                mysqlpp::Transaction trans(*cp, mysqlpp::Transaction::serializable, mysqlpp::Transaction::session);
-                // Show initial state
-                mysqlpp::Query query = cp->query();
-
-                do {
-                    if (stat) {
-                        if (!query.exec(sql)) {
-                            LOG_WARN("execute sql[%s] failded", sql.c_str());
-                        }
-                        LOG_DEBUG("SQL:[%s]",sql.data());
-                    }
-                    if (sqlString_.size() > 0) {
-                        sql = sqlString_.pop_front(stat);
-                    } else {
-                        break;
-                    }
-                } while (true);
-                trans.commit();
-            }
-        } catch (mysqlpp::Exception& e) {
-            LOG_ERROR("Failed to set up initial pooled connection: %s\n",e.what());
-        }
-
-        // Release the per-thread resources before we exit
-        mysqlpp::Connection::thread_end();
-    }
+MysqlPool::~MysqlPool(){
+	while(!stack_.empty()){
+		auto tmp = stack_.top();
+		stack_.pop();
+		delete tmp;
+	}
+	LOG_DEBUG("mysql pool dtor\n");
+	// mysql pool 始终会泄露内存的原因
+	mysql_library_end();
 }
 
-// Do a simple form of in-use connection limiting: wait to return
-// a connection until there are a reasonably low number in use
-// already.  Can't do this in create() because we're interested in
-// connections actually in use, not those created.  Also note that
-// we keep our own count; ConnectionPool::size() isn't the same!
-mysqlpp::Connection* MysqlPool::grab() {
-    std::unique_lock<std::mutex> locker(mutex_);
-    if (conns_in_use_.get() >= conns_max_) {
-        shrink();
-        // indicate waiting for release
-        condition_.wait(locker);
-    }
-    mysqlpp::Connection *conn = mysqlpp::ConnectionPool::grab();
-    conns_in_use_.increment();
-    LOG_DEBUG("-------increment:[%d]\n",conns_in_use_.get());
-    return conn;
+
+/*
+ *配置数据库参数
+ */
+void MysqlPool::setParameter( const char *mysqlhost,const char *mysqluser,const char *mysqlpwd,const char *databasename,unsigned int  port,const char *socket,unsigned long client_flag,unsigned int  max_connect ) {
+	_mysqlhost    = mysqlhost;
+	_mysqluser    = mysqluser;
+	_mysqlpwd     = mysqlpwd;
+	_databasename = databasename;
+	_port         = port;
+	_socket       = socket;
+	_client_flag  = client_flag;
+	MAX_CONNECT   = max_connect;
+
+	// 预先存入 多个可用的连接
+	for(size_t i = 0;i<5;i++){
+		auto tmp = createOneConnect();
+		stack_.push(tmp);
+	}
+}
+	
+MysqlConn *MysqlPool::createOneConnect(){
+	LOG_DEBUG("mysql pool create new mysql conn\n");
+	MysqlConn *tmp = new MysqlConn();
+	if(tmp->connect(_mysqlhost,_mysqluser,_mysqlpwd,_databasename,_port,_socket,_client_flag)){
+		return tmp;
+	}
+	return NULL;
 }
 
-// Other half of in-use conn count limit
-void MysqlPool::release(const mysqlpp::Connection* conn) {
-    mysqlpp::ConnectionPool::release(conn);
-    conns_in_use_.decrement();
-    condition_.notify_one();
-    LOG_DEBUG("-------decrement:",conns_in_use_.get());
+MysqlConn *MysqlPool::grab(){
+	std::unique_lock<std::mutex> locker(mutex_);
+	if(stack_.empty()){
+		return createOneConnect();
+	}else{
+		auto tmp = stack_.top();
+		stack_.pop();
+		return tmp;
+	}
 }
 
-// Superclass overrides
-mysqlpp::Connection* MysqlPool::create() {
-    // Create connection using the parameters we were passed upon
-    // creation.  This could be something much more complex, but for
-    // the purposes of the example, this suffices.
-
-    std::unique_lock<std::mutex> locker(mutex_);
-    while (!resumMysql_.empty()) {
-        LOG_DEBUG("-------reuse\n");
-        mysqlpp::Connection* conn = resumMysql_.back();
-        resumMysql_.pop_back();
-        if (conn->ping()) {
-            LOG_DEBUG("-------reuse mysql connection\n");
-            return conn;
-        } else {
-            LOG_DEBUG("-------clear invalid mysql connection\n");
-            delete conn;
-        }
-    }
-    LOG_DEBUG("-------create\n");
-    return new mysqlpp::Connection(
-               db_.empty() ? 0 : db_.c_str(),
-               server_.empty() ? 0 : server_.c_str(),
-               user_.empty() ? 0 : user_.c_str(),
-               password_.empty() ? "" : password_.c_str(),
-               port_>0 ? port_ : 0);
-}
-
-void MysqlPool::destroy(mysqlpp::Connection* connection) {
-    // Our superclass can't know how we created the Connection, so
-    // it delegates destruction to us, to be safe.
-    LOG_DEBUG("-------return\n");
-    std::lock_guard<std::mutex> locker(mutex_);
-    std::vector<mysqlpp::Connection*>::iterator result = std::find(resumMysql_.begin(), resumMysql_.end(), connection);
-    if (result == resumMysql_.end()) {
-        resumMysql_.push_back(connection);
-    }
+void MysqlPool::release(MysqlConn *conn){
+	std::unique_lock<std::mutex> locker(mutex_);
+	if(stack_.size()>MAX_CONNECT){
+		LOG_DEBUG("mysql pool stack full\n");
+		delete conn;
+	}else{
+		LOG_DEBUG("mysql pool reuse mysql conn\n");
+		stack_.push(conn);
+	}
 }

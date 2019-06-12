@@ -4,6 +4,7 @@
 #include "../System/config.h"
 
 #include "../Cedis/RedisPool.h"
+#include "../Mysql/MysqlPool.h"
 
 int main(int argc, char const *argv[]){
     UNUSED(argc);
