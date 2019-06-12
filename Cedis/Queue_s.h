@@ -25,7 +25,7 @@ public:
     void wake_all();
 protected:
     void pop();
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
     std::condition_variable condition_;
 };
 

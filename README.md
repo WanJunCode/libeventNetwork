@@ -1,6 +1,3 @@
-# libeventNetwork
-
-一个C++后台框架
 .
 ├── base
 │   ├── Atomic.h
@@ -57,25 +54,34 @@
 │   ├── TSocket.cpp
 │   └── TSocket.h
 ├── Makefile
-├── MemPool
-│   ├── MemoryPool.cpp
-│   ├── MemoryPool.h
-│   └── SimpleMemPool.h
-├── MultiProcess
-│   ├── MultiProcess.cpp
-│   ├── MultiProcess.h
-│   ├── Process.cpp
-│   └── Process.h
+├── Mysql
 ├── Package
+│   ├── Adapter
+│   │   ├── Adapter.cpp
+│   │   ├── Adapter.h
+│   │   ├── AdapterMap.cpp
+│   │   ├── AdapterMap.h
+│   │   ├── ChatAdapter.cpp
+│   │   ├── ChatAdapter.h
+│   │   ├── ChatProcessor
+│   │   │   ├── ChatMessage.cpp
+│   │   │   ├── ChatMessage.h
+│   │   │   ├── chatPackage.protocal
+│   │   │   ├── ChatSignIn.cpp
+│   │   │   └── ChatSignIn.h
+│   │   ├── EchoAdapter.cpp
+│   │   ├── EchoAdapter.h
+│   │   └── Process.h
 │   ├── ChatPackage.cpp
 │   ├── ChatPackage.h
 │   ├── CRC.cpp
 │   ├── CRC.h
+│   ├── EchoPackage.cpp
+│   ├── EchoPackage.h
 │   ├── MultipleProtocol.cpp
 │   ├── MultipleProtocol.h
 │   ├── Package.h
-│   ├── package_test.cpp
-│   └── Processor.h
+│   └── package_test.cpp
 ├── README.md
 ├── Signal
 │   ├── PosixSignal.cpp
@@ -87,3 +93,5 @@
     ├── Timestamp.h
     ├── utime.cpp
     └── utime.h
+
+12 directories, 82 files
