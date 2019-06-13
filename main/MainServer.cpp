@@ -66,8 +66,6 @@ void MainServer::init(){
     auto mysqlPool = MysqlPool::getInstance();
     mysqlPool->setParameter("localhost","root","wanjun","test_db",3306,NULL,0,3);
 
-    auto conn = mysqlPool->grab();
-    mysqlPool->release(conn);
     // threadPool_->run(std::bind(&MysqlPool::runInThread,mysqlPool));
 
     timerMgr_ = make_shared<TimerManager>();

@@ -15,24 +15,14 @@ grab 获取连接时不够 则创建新的连接 返回,在回收的时候delete
 #ifndef MYSQL_MYSQLPOOL
 #define MYSQL_MYSQLPOOL
 
-#include <mysql/mysql.h>
 #include <stack>
-#include <map>
-#include "../base/Atomic.h"
+#include "MysqlConn.h"
+#include "MysqlWrapper.h"
 #include "../Cedis/Queue_s.h"
+#include "../base/Atomic.h"
 
-class MysqlConn{
-private:
-	MYSQL *conn;
-public:
-	typedef std::map<const std::string,std::vector<const char*> > queryResult;
-	MysqlConn();
-	~MysqlConn();
-	bool connect(const char *host,const char *user,const char *passwd,const char *db,unsigned int port,const char *unix_socket,unsigned long clientflag);
-	queryResult execute(const char *sql);
-};
-
-
+class MysqlConn;	// forward declare
+class MysqlWrapper;
 class MysqlPool {
 public:
 	MysqlPool();
@@ -47,6 +37,7 @@ public:
 											 const char*   _socket = NULL,
 											 unsigned long _client_flag = 0,
 											 unsigned int  MAX_CONNECT = 50 );              //设置数据库参数
+	std::shared_ptr<MysqlWrapper> getMysqlWrapper();
 	MysqlConn *grab();
 	void release(MysqlConn *conn);
 
