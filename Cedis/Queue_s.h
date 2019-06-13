@@ -36,6 +36,7 @@ Queue_s<T, Sequence>::Queue_s(){
 
 template <class T, class Sequence>
 Queue_s<T, Sequence>::~Queue_s() {
+
 }
 
 template <class T, class Sequence>
@@ -62,7 +63,7 @@ T Queue_s<T, Sequence>::pop_front(bool &bstat, double seconds) {
         T tmp(std::queue<T, Sequence>::front());
         std::queue<T, Sequence>::pop();
         bstat = true;
-        return tmp;
+        return std::move(tmp);
     }
     bstat = false;
     return T();
