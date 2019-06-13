@@ -23,7 +23,7 @@ grab 获取连接时不够 则创建新的连接 返回,在回收的时候delete
 
 class MysqlConn;	// forward declare
 class MysqlWrapper;
-class MysqlPool {
+class MysqlPool : public noncopyable, std::enable_shared_from_this<MysqlPool>{
 public:
 	MysqlPool();
 	static MysqlPool* getInstance();              //单列模式获取本类的对象
@@ -40,7 +40,7 @@ public:
 	std::shared_ptr<MysqlWrapper> getMysqlWrapper();
 	MysqlConn *grab();
 	void release(MysqlConn *conn);
-
+	void debug();
 private:
 	MysqlConn *createOneConnect();
 private:

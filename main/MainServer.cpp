@@ -64,13 +64,12 @@ void MainServer::init(){
 
     // Mysql Pool
     auto mysqlPool = MysqlPool::getInstance();
-    mysqlPool->setParameter("localhost","root","wanjun","test_db",3306,NULL,0,3);
+    mysqlPool->setParameter("localhost","root","wanjun","test_db",3306,NULL,0,20);
 
     // threadPool_->run(std::bind(&MysqlPool::runInThread,mysqlPool));
 
     timerMgr_ = make_shared<TimerManager>();
     timerMgr_->init();
-
     threadPool_->run(std::bind(&TimerManager::runInThread,timerMgr_));
 
     // 添加需要解析的协议种类
@@ -199,14 +198,14 @@ void MainServer::execute(std::string cmd,MainServer *server){
         LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
         LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
         LOG_DEBUG("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
-        LOG_DEBUG("transport socketqueue size = %d\n\n",server->transport_->getSocketQueue());
+        LOG_DEBUG("transport socketqueue size = %d\n",server->transport_->getSocketQueue());
+        MysqlPool::getInstance()->debug();
     }else if(cmd == "hb"){
         LOG_DEBUG("heart beat\n");
         server->heartBeat();
     }else{
-        LOG_DEBUG("cmd error...\n");
+        // LOG_DEBUG("cmd error...\n");
     }
-
 }
 
 // static

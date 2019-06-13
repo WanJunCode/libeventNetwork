@@ -28,7 +28,6 @@ MysqlPool::~MysqlPool(){
 	mysql_library_end();
 }
 
-
 /*
  *配置数据库参数
  */
@@ -53,6 +52,7 @@ MysqlConn *MysqlPool::createOneConnect(){
 	LOG_DEBUG("mysql pool create new mysql conn\n");
 	MysqlConn *tmp = new MysqlConn();
 	if(tmp->connect(_mysqlhost,_mysqluser,_mysqlpwd,_databasename,_port,_socket,_client_flag)){
+		connect_count.increment();
 		return tmp;
 	}
 	return NULL;
@@ -60,6 +60,7 @@ MysqlConn *MysqlPool::createOneConnect(){
 
 MysqlConn *MysqlPool::grab(){
 	std::unique_lock<std::mutex> locker(mutex_);
+	
 	if(stack_.empty()){
 		return createOneConnect();
 	}else{
@@ -73,6 +74,7 @@ void MysqlPool::release(MysqlConn *conn){
 	std::unique_lock<std::mutex> locker(mutex_);
 	if(stack_.size()>MAX_CONNECT){
 		LOG_DEBUG("mysql pool stack full\n");
+		connect_count.decrement();
 		delete conn;
 	}else{
 		LOG_DEBUG("mysql pool reuse mysql conn\n");
@@ -80,7 +82,12 @@ void MysqlPool::release(MysqlConn *conn){
 	}
 }
 
+// 使用 shared_from_this 的条件是 本身以 shared_ptr 形式存在
 std::shared_ptr<MysqlWrapper> MysqlPool::getMysqlWrapper(){
-	auto conn = grab();
-	return std::make_shared<MysqlWrapper>(conn,this);
+	return std::make_shared<MysqlWrapper>(grab(),this);
+}
+
+void MysqlPool::debug(){
+	LOG_DEBUG("connect count [%d]\n",connect_count.get());
+	LOG_DEBUG("mysql pool stack size [%d]\n",stack_.size());
 }

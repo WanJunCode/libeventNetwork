@@ -1,11 +1,10 @@
 #include "MysqlWrapper.h"
-#include "../main/logcpp.h"
 #include "MysqlPool.h"
+#include "../main/logcpp.h"
 
 MysqlWrapper::MysqlWrapper(MysqlConn *conn, MysqlPool *pool)
     :conn_(conn),
      pool_(pool){
-    LOG_DEBUG("mysql wrapper get mysql conn\n");
 }
 
 MysqlWrapper::~MysqlWrapper(){

@@ -1,11 +1,14 @@
 #ifndef MYSQL_MYSQLCONN_H
 #define MYSQL_MYSQLCONN_H
 
+// 对象语义 不能简单复制
+
 #include <map>
 #include <mysql/mysql.h>
 #include <vector>
+#include "../base/noncopyable.h"
 
-class MysqlConn{
+class MysqlConn : public noncopyable{
 private:
 	MYSQL *conn;
 public:
