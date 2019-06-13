@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <memory>
 #include "../System/config.h"
+#include "../base/CurrentThread.h"
 
 // 日志等级 对应的 字符串，用于将日志等级转化为字符串
 const static char *LogLevelName[Log::NUM_LOG_LEVELS] =
@@ -53,7 +54,7 @@ void Log::printf(LogLevel level,unsigned long pthread_id,const std::string filen
     struct tm* t= localtime(&tt);
     char timeStr[150]={0};
 
-    sprintf(timeStr,"[%s]tid:[%lu][%s][%d][%s]:[%02d:%02d:%02d]",LogLevelName[level],pthread_id,filename.c_str(),line,function.c_str(),t->tm_hour,t->tm_min,t->tm_sec);
+    sprintf(timeStr,"[%s]tid:[%s][%s][%d][%s]:[%02d:%02d:%02d]",LogLevelName[level],CurrentThread::t_threadName,filename.c_str(),line,function.c_str(),t->tm_hour,t->tm_min,t->tm_sec);
 
     va_list args;       //定义一个va_list类型的变量，用来储存单个参数
     va_start(args,cmd); //使args指向可变参数的第一个参数
