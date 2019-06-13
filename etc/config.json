@@ -11,5 +11,13 @@
         "passwd":"",
         "max":20,
         "min":5
+    },
+    "mysql":{
+        "ip":"localhost",
+        "port":3306,
+        "user":"root",
+        "passwd":"wanjun",
+        "dbname":"test_db",
+        "maxconn":50
     }
 }

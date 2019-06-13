@@ -9,8 +9,7 @@ MThreadPool::MThreadPool(const std::string& nameArg)
     notFull_(mutex_),
     name_(nameArg),
     maxQueueSize_(0),
-    running_(false)
-{
+    running_(false){
     LOG_DEBUG("muduo thread pool init\n");
 }
 

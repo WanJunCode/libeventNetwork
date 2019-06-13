@@ -5,6 +5,8 @@
 #include <memory>
 #include <jsoncpp/json/json.h>
 #include "../Cedis/RedisConfig.h"
+#include "../Mysql/MysqlConfig.h"
+
 #define CONFIG_PATH "etc/config.json"
 
 class MainConfig{
@@ -16,6 +18,7 @@ public:
     bool parseFromJson(const std::string &json);
 
     bool getRedis(std::string config);
+    bool getMysql(std::string config);
 
     size_t getPort(){
         return port_;
@@ -41,6 +44,10 @@ public:
         return redisConfig_;
     }
 
+    std::shared_ptr<MysqlConfig> mysqlConfig(){
+        return mysqlConfig_;
+    }
+
 private:
     size_t port_;
     size_t bufferSize_;
@@ -50,6 +57,7 @@ private:
     std::string logFileOutput_;    // log日志文件路径
 
     std::shared_ptr<RedisConfig> redisConfig_;
+    std::shared_ptr<MysqlConfig> mysqlConfig_;
 };
 
 #endif // !WANJUN_MAIN_CONFIJ_H

@@ -15,7 +15,13 @@ public:
 	typedef std::map<const std::string,std::vector<const char*> > queryResult;
 	MysqlConn();
 	~MysqlConn();
-	bool connect(const char *host,const char *user,const char *passwd,const char *db,unsigned int port,const char *unix_socket,unsigned long clientflag);
+	bool connect(const char *host,
+				const char *user,
+				const char *passwd,
+				const char *db,
+				unsigned int port,
+				const char *unix_socket,
+				unsigned long clientflag);
 	queryResult execute(const char *sql);
 };
 

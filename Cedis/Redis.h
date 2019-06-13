@@ -50,6 +50,7 @@ public:
     inline void setUseable(){                      // 设置当前连接为可用状态
         useable = true;                       
     }
+    
     inline bool getuseable(){                      // 获得当前连接的状态
         return useable;
     }

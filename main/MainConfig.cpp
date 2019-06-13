@@ -78,6 +78,14 @@ bool MainConfig::parseFromJson(const std::string &json){
             if( false == getRedis(Json::FastWriter().write(root["redis"]))){
                 return false;
             }
+
+            if(root["mysql"].isObject() == false){
+                LOG_DEBUG("config json node[mysql] is not object\n");
+                return false;
+            }
+            if( false == getMysql(Json::FastWriter().write(root["mysql"]))){
+                return false;
+            }
             
             return true;
         }else{
@@ -98,7 +106,35 @@ bool MainConfig::getRedis(std::string config){
             std::string passwd = root["passwd"].asString();
             unsigned int max = root["max"].asInt();
             unsigned int min = root["min"].asInt();
-            redisConfig_ = std::make_shared<RedisConfig>(ip,port,passwd,max,min);
+            redisConfig_ = std::make_shared<RedisConfig>(ip,
+                                                        port,
+                                                        passwd,
+                                                        max,
+                                                        min);
+            return true;
+        }
+    } catch (std::exception &e) {
+        LOG_DEBUG("Json prase failded:%s", e.what());
+    }
+    return false;
+}
+
+bool MainConfig::getMysql(std::string config){
+    try {
+        Json::Value root;
+        if (Json::Reader().parse(config, root)) {
+            std::string host = root["ip"].asString();
+            std::string user = root["user"].asString();
+            std::string passwd = root["passwd"].asString();
+            std::string dbname = root["dbname"].asString();
+            unsigned int port = root["port"].asInt();
+            unsigned int maxconn = root["maxconn"].asInt();
+            mysqlConfig_ = std::make_shared<MysqlConfig>(host,
+                                                        user,
+                                                        passwd,
+                                                        dbname,
+                                                        port,
+                                                        maxconn);
             return true;
         }
     } catch (std::exception &e) {
