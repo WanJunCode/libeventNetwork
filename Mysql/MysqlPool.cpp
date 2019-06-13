@@ -23,35 +23,35 @@ bool MysqlConn::connect(const char *host,const char *user,const char *passwd,con
 }
 
 MysqlConn::queryResult MysqlConn::execute(const char *sql){
-		std::map<const std::string,std::vector<const char*> > results;
-		if (conn) {
-				if (mysql_query(conn,sql) == 0) {
-					// 获得并存储返回的查询结果
-					MYSQL_RES *res = mysql_store_result(conn);
-					if (res) {
-							MYSQL_FIELD *field;
-							while ((field = mysql_fetch_field(res))) {
-								results.insert(make_pair(field->name,std::vector<const char*>()));
-							}
-							MYSQL_ROW row;
-							while ((row = mysql_fetch_row(res))) {
-								unsigned int i = 0;
-								for (std::map<const std::string,std::vector<const char*> >::iterator it = results.begin();
-										it != results.end(); ++it) {
-										(it->second).push_back(row[i++]);
-								}     
-							}
-							mysql_free_result(res);
-					}else{
-							LOG_ERROR("mysql result [%s]\n",mysql_error(conn));
-			}
-			} else {
-					LOG_ERROR("mysql query failure [%s]\n",mysql_error(conn));
+	std::map<const std::string,std::vector<const char*> > results;
+	if (conn) {
+		if (mysql_query(conn,sql) == 0) {
+			// 获得并存储返回的查询结果
+			MYSQL_RES *res = mysql_store_result(conn);
+			if (res) {
+				MYSQL_FIELD *field;
+				while ((field = mysql_fetch_field(res))) {
+					results.insert(make_pair(field->name,std::vector<const char*>()));
+				}
+				MYSQL_ROW row;
+				while ((row = mysql_fetch_row(res))) {
+					unsigned int i = 0;
+					for (std::map<const std::string,std::vector<const char*> >::iterator it = results.begin();
+							it != results.end(); ++it) {
+							(it->second).push_back(row[i++]);
+					}     
+				}
+				mysql_free_result(res);
+			}else{
+				LOG_ERROR("mysql result [%s]\n",mysql_error(conn));
 			}
 		} else {
-				LOG_ERROR("mysql isn't connect [%s]\n",mysql_error(conn));
+			LOG_ERROR("mysql query failure [%s]\n",mysql_error(conn));
 		}
-		return results;
+	} else {
+		LOG_ERROR("mysql isn't connect [%s]\n",mysql_error(conn));
+	}
+	return results;
 }
 
 
