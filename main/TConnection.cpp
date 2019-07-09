@@ -332,11 +332,14 @@ TConnection::recv_framing(){
             // 接收到一个完整的数据包，开始处理数据包
             transition();
         }else if(framePos > 0){
+            const char *get="GET";
+            if(strncmp((char *)tmp_ptr,get,3)==0){
+                LOG_DEBUG("http get\n");
+                server_->gethttp().response(this);
+            }
             LOG_DEBUG("Can't parse one package true\n");
             // 没收接收到有用的数据包，则丢弃多余的数据
             evbuffer_drain(input,framePos);
-            const char *response = "can't parse your request";
-            bufferevent_write(bev,response,strlen(response));
         }
     }
 }
@@ -348,4 +351,9 @@ bool TConnection::transMessage(Package *out) {
         }
     }
     return false;
+}
+
+int TConnection::write(Buffer& buf){
+    LOG_DEBUG("http response [%s]\n",std::string(buf.peek(), buf.readableBytes()).data());
+    return bufferevent_write(bev, buf.peek(), buf.readableBytes());
 }

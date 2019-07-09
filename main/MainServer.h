@@ -12,6 +12,7 @@
 #include "../Package/Adapter/Adapter.h"
 #include "../base/ThreadPool.h"
 #include "../base/TimerManager.h"
+#include "../http/httpServer.h"
 
 // #include "grpc/client.h"
 
@@ -61,6 +62,9 @@ public:
       return maxBufferSize_;
     }
 
+    HttpServer& gethttp(){
+      return http;
+    }
 
 private:
     struct event *ev_stdin; // 处理命令行输入
@@ -88,6 +92,8 @@ private:
     // 活动的连接
     std::vector<TConnection *> activeTConnection;
     std::queue<TConnection *> connectionQueue;
+
+    HttpServer http;
 
 private:
     static void stdinCallBack(evutil_socket_t stdin_fd, short what, void *args);

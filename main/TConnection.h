@@ -3,8 +3,10 @@
 
 #include "TSocket.h"
 #include "MainServer.h"
+#include "../base/Buffer.h"
 
 #include <event.h>
+#include <boost/any.hpp>
 
 class TSocket;
 class MainServer;
@@ -67,6 +69,16 @@ public:
         return heartBeat_;
     }
 
+    void setContext(boost::any &any){
+        context_ = any;
+    }
+
+    boost::any& getContext(){
+        return context_;
+    }
+
+    int write(Buffer& buf);
+
 private:
     void read_request();
 public:
@@ -86,6 +98,8 @@ private:
     /// Read buffer
     size_t frameSize_;
     size_t maxBufferSize_;
+
+    boost::any context_;
 
 private:
     static void read_cb(struct bufferevent *bev, void *args);
