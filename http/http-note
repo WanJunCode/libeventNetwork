@@ -1,8 +1,0 @@
-httpServer 作为用户可以直接接触的类
-
-httpRequest 作为接收到数据后，对http请求进行解析并处理
-
-httpContext 每个连接都会创建一个　httpContext 上下文，用于保存当前的　http 数据包处理状态
-在本程序中，首先判断　数据是否为　http 报文
-然后给　TConnection　赋值一个 boost::any 类型的　httpContext
-在完成　http 数据包的处理后重置

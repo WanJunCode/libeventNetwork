@@ -1,0 +1,9 @@
+httpServer 作为用户可以直接接触的类
+
+httpContext 每个连接都会创建一个　httpContext 上下文，用于保存当前的　http 数据包处理状态以及　httpRequest
+
+httpContext 从 Buffer 中获得数据并解析成　httpRequest
+
+创建栈变量 httpResponse 并填充该变量，完成后　写入　Buffer 中再发送到浏览器
+
+note: 以上出现的　httpContext　httpResponse　都是栈变量，结束后自动销毁
