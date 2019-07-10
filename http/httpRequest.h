@@ -5,6 +5,7 @@
 #include "../base/copyable.h"
 #include "../Util/Timestamp.h"
 #include "../base/Types.h"
+#include "../main/logcpp.h"
 
 #include <map>
 #include <assert.h>
@@ -137,7 +138,6 @@ class HttpRequest : public copyable
       value.resize(value.size()-1);
     }
     // std::map 增加一个键值对
-    printf("key [%s] : value [%s]\n",field.data(),value.data());
     headers_[field] = value;
   }
 

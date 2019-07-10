@@ -79,6 +79,8 @@ public:
 
     int write(Buffer& buf);
 
+    int write(const char *data,size_t length);
+
 private:
     void read_request();
 public:

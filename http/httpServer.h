@@ -14,6 +14,7 @@
 #include <functional>
 #include "../base/noncopyable.h"
 
+class Buffer;
 class TConnection;
 class HttpRequest;
 class HttpResponse;
@@ -38,6 +39,8 @@ class HttpServer: public noncopyable
   }
 
   void response(TConnection *conn);
+  bool onMessage(TConnection *conn, Buffer& buf);
+  void onRequest(TConnection *conn, HttpRequest &request);
 
  private:
 

@@ -332,12 +332,16 @@ TConnection::recv_framing(){
             // 接收到一个完整的数据包，开始处理数据包
             transition();
         }else if(framePos > 0){
-            const char *get="GET";
-            if(strncmp((char *)tmp_ptr,get,3)==0){
-                LOG_DEBUG("http get\n");
-                server_->gethttp().response(this);
+
+            // HTTP 请求入口
+            Buffer buf;
+            buf.append(image.iov_base,image.iov_len);
+            if(!server_->gethttp().onMessage(this,buf)){
+                LOG_DEBUG("Can't parse one package true\n");
+            }else{
+                LOG_DEBUG("http response\n");
             }
-            LOG_DEBUG("Can't parse one package true\n");
+
             // 没收接收到有用的数据包，则丢弃多余的数据
             evbuffer_drain(input,framePos);
         }
@@ -354,6 +358,10 @@ bool TConnection::transMessage(Package *out) {
 }
 
 int TConnection::write(Buffer& buf){
-    LOG_DEBUG("http response [%s]\n",std::string(buf.peek(), buf.readableBytes()).data());
-    return bufferevent_write(bev, buf.peek(), buf.readableBytes());
+    return write(buf.peek(), buf.readableBytes());
+}
+
+int TConnection::write(const char *data,size_t length){
+    LOG_DEBUG("http response [%s]\n",std::string(data,length).data());
+    return bufferevent_write(bev, data, length);
 }
