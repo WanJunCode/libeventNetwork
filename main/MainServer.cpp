@@ -14,8 +14,25 @@
 #include <memory>
 
 #define MAXBUFFERSIZE (1024*16*16)
+using namespace std::placeholders;
 
 typedef unsigned char BYTE;
+
+void MainServer::httpcb(const HttpRequest& req,HttpResponse* resp){
+    resp->setStatusCode(HttpResponse::k200Ok);
+    resp->setStatusMessage("OK");
+    resp->setContentType("text/plain");
+    resp->addHeader("Server", "Muduo");
+
+    std::ostringstream oss;
+    oss<<"hello, world! from main server"<<endl;
+    oss<<"connection vector size ="<<activeTConnection.size()<<endl;
+    oss<<"connection queue size ="<<connectionQueue.size()<<endl;
+    oss<<"transport activeSokcet size = "<<transport_->getActiveSize()<<endl;
+    oss<<"transport socketqueue size = "<<transport_->getSocketQueue()<<endl;
+    oss<<MysqlPool::getInstance()->debug();
+    resp->setBody(oss.str());
+}
 
 MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t backlog)
     :port_(port),
@@ -76,7 +93,7 @@ void MainServer::init(){
     protocol_ = make_shared<MultipleProtocol>();
     protocol_->addProtocol(std::make_shared<ChatProtocol>());
     protocol_->addProtocol(std::make_shared<EchoProtocol>());
-
+    http.setHttpCallback(std::bind(&MainServer::httpcb,this,_1,_2));
 }
 
 MainServer::~MainServer(){
@@ -226,3 +243,4 @@ void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args)
         execute(cmd,server);
     }  
 }
+

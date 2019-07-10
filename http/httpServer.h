@@ -24,7 +24,7 @@ class HttpServer: public noncopyable
   ~HttpServer();
 
   /// Not thread safe, callback be registered before calling start().
-  void setHttpCallback(const HttpCallback& cb)
+  void setHttpCallback(HttpCallback cb)
   {
     httpCallback_ = cb;
   }

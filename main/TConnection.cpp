@@ -1,8 +1,7 @@
 #include "TConnection.h"
 #include "logcpp.h"
-#include "../Package/ChatPackage.h"
-
 #include "../Package/Adapter/AdapterMap.h"
+
 #include <string.h>
 #include <vector>
 #include <stdlib.h>
@@ -37,6 +36,7 @@ private:
 };
 
 void process(Adapter *adapter,std::unique_ptr<Package> package){
+
 }
 
 TConnection::TConnection(TSocket *sock, MainServer *server)
@@ -215,16 +215,6 @@ TConnection::read_request(){
     transition();
 }
 
-MainServer *
-TConnection::getServer(){
-    return server_;
-}
-
-TSocket *
-TConnection::getSocket(){
-    return socket_;
-}
-
 void 
 TConnection::close(){
     // if(socket_)
@@ -268,7 +258,6 @@ TConnection::heartBeat(){
 // static
 void TConnection::error_cb(struct bufferevent *bev, short what, void *args){
     UNUSED(bev);
-
     // client disconnection
     TConnection *conn = (TConnection *)args;
 
@@ -284,7 +273,6 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args){
 // static
 void TConnection::read_cb(struct bufferevent *bev, void *args){
     UNUSED(bev);
-
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
     conn->workSocket();
@@ -341,7 +329,6 @@ TConnection::recv_framing(){
             }else{
                 LOG_DEBUG("http response\n");
             }
-
             // 没收接收到有用的数据包，则丢弃多余的数据
             evbuffer_drain(input,framePos);
         }
@@ -355,13 +342,4 @@ bool TConnection::transMessage(Package *out) {
         }
     }
     return false;
-}
-
-int TConnection::write(Buffer& buf){
-    return write(buf.peek(), buf.readableBytes());
-}
-
-int TConnection::write(const char *data,size_t length){
-    LOG_DEBUG("http response [%s]\n",std::string(data,length).data());
-    return bufferevent_write(bev, data, length);
 }

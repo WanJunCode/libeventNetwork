@@ -1,5 +1,5 @@
-#ifndef __MAIN_SERVER_H__
-#define __MAIN_SERVER_H__
+#ifndef LIBNETWORK_MAIN_MAINSERVER_H_
+#define LIBNETWORK_MAIN_MAINSERVER_H_
 
 #include "MyTransport.h"
 #include "TSocket.h"
@@ -12,9 +12,10 @@
 #include "../Package/Adapter/Adapter.h"
 #include "../base/ThreadPool.h"
 #include "../base/TimerManager.h"
+#include "../base/noncopyable.h"
 #include "../http/httpServer.h"
-
-// #include "grpc/client.h"
+#include "../http/httpRequest.h"
+#include "../http/httpResponse.h"
 
 #include <event.h>
 #include <vector>
@@ -26,13 +27,9 @@
 #define POOL_SIZE 20
 #define IOTHREAD_SIZE 10
 
-class TSocket;
-class MyTransport;
-class TConnection;
-class Protocol;
-class MainConfig;
+//　尽量避免使用前置声明
 
-class MainServer{
+class MainServer: public noncopyable{
 public:
     MainServer(size_t port = 12345, size_t poolSize = 20, size_t iothreadSize = 10, size_t backlog = 10);
     MainServer(MainConfig *config);
@@ -65,6 +62,8 @@ public:
     HttpServer& gethttp(){
       return http;
     }
+
+    void httpcb(const HttpRequest& req,HttpResponse* resp);
 
 private:
     struct event *ev_stdin; // 处理命令行输入
@@ -100,4 +99,4 @@ private:
     static void execute(std::string cmd, MainServer *server);
 };
 
-#endif
+#endif // LIBNETWORK_MAIN_MAINSERVER_H_

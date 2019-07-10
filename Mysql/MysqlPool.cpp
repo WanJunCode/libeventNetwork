@@ -87,7 +87,9 @@ std::shared_ptr<MysqlWrapper> MysqlPool::getMysqlWrapper(){
 	return std::make_shared<MysqlWrapper>(grab(),this);
 }
 
-void MysqlPool::debug(){
-	LOG_DEBUG("connect count [%d]\n",connect_count.get());
-	LOG_DEBUG("mysql pool stack size [%d]\n",stack_.size());
+std::string MysqlPool::debug(){
+	std::ostringstream oss;
+	oss<<"connect count = "<<connect_count.get()<<std::endl;
+	oss<<"mysql pool stack size = "<<stack_.size()<<std::endl;
+	return oss.str();
 }

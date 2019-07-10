@@ -40,7 +40,7 @@ void HttpServer::response(TConnection *conn){
     Buffer buf;
     // 将回复添加到 buffer 中
     resp.appendToBuffer(&buf);
-    conn->write(buf);
+    conn->writeBuffer(buf);
 }
 
 bool HttpServer::onMessage(TConnection *conn, Buffer& buf){
@@ -72,7 +72,7 @@ void HttpServer::onRequest(TConnection *conn, HttpRequest &request){
     // 将回复添加到 buffer 中
     response.appendToBuffer(&buf);
     // 发送　buffer
-    conn->write(buf);
+    conn->writeBuffer(buf);
 
     // 判断是否是长连接
     if (response.closeConnection())
