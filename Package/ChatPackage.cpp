@@ -4,6 +4,7 @@
 
 #define CHAT_LENGTH ( sizeof(ChatPackage::CHAT_HEADER_t) + sizeof(ChatPackage::CHAT_TAIL_t) )
 
+// 用于还原数据包
 // head =========== data ============ tail
 ChatPackage::ChatPackage(void *payload, size_t length)
     :Package(payload,length),
@@ -13,6 +14,7 @@ ChatPackage::ChatPackage(void *payload, size_t length)
     factoryCode = CHAT_CODE;
 }
 
+// 用于组包
 ChatPackage::ChatPackage(CRYPT_TYPE crypt, DATA_TYPE type, void *payload, size_t length)
     :Package(),
     data_length(length){

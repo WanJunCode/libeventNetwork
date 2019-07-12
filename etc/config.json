@@ -1,5 +1,5 @@
 {
-    "port_":12345,
+    "port_":8888,
     "bufferSize_":1024,
     "threadPoolSize_":15,
     "IOThreads_":10,
@@ -17,7 +17,7 @@
         "port":3306,
         "user":"root",
         "passwd":"wanjun",
-        "dbname":"test_db",
+        "dbname":"cloudserver",
         "maxconn":50
     }
 }

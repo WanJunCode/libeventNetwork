@@ -22,10 +22,10 @@ void MainServer::httpcb(const HttpRequest& req,HttpResponse* resp){
     resp->setStatusCode(HttpResponse::k200Ok);
     resp->setStatusMessage("OK");
     resp->setContentType("text/plain");
-    resp->addHeader("Server", "Muduo");
+    resp->addHeader("Server", "CloudServer");
 
     std::ostringstream oss;
-    oss<<"hello, world! from main server"<<endl;
+    oss<<"from :Cloud Server"<<endl;
     oss<<"connection vector size ="<<activeTConnection.size()<<endl;
     oss<<"connection queue size ="<<connectionQueue.size()<<endl;
     oss<<"transport activeSokcet size = "<<transport_->getActiveSize()<<endl;
@@ -81,7 +81,7 @@ void MainServer::init(){
 
     // Mysql Pool
     auto mysqlPool = MysqlPool::getInstance();
-    mysqlPool->setParameter("localhost","root","wanjun","test_db",3306,NULL,0,20);
+    mysqlPool->setParameter("localhost","root","wanjun","cloudserver",3306,NULL,0,20);
 
     // threadPool_->run(std::bind(&MysqlPool::runInThread,mysqlPool));
 

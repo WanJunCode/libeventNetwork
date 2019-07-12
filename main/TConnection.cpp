@@ -24,6 +24,7 @@ public:
     void run(){
         auto out = adapter_->adapter(package_);
         if(out){
+            LOG_DEBUG("获得下行报文\n");
             client_->transMessage(out);
             delete out;
         }
@@ -54,7 +55,7 @@ TConnection::TConnection(TSocket *sock, IOThread *iothread)
     base_(iothread_->getBase()){
     server_ = iothread_->getServer();
     if(server_ == NULL){
-        LOG_DEBUG("iothread get server but is null\n");
+        LOG_FATAL("iothread get server but is null\n");
     }
     LOG_DEBUG("TConnection structure iothread ... socket [%d]\n", socket_->getSocketFD());
     init();
@@ -102,11 +103,7 @@ TConnection::init(){
             }
         }
 
-        bufferevent_setcb(  bev, 
-                            TConnection::read_cb, 
-                            NULL, 
-                            TConnection::error_cb, 
-                            this);
+        bufferevent_setcb(  bev, TConnection::read_cb, NULL, TConnection::error_cb, this);
         bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
 
         // 初始化后暂停 bufferevent的使用
@@ -122,8 +119,7 @@ TConnection::init(){
 }
 
 void 
-TConnection::setSocket(TSocket *socket)
-{
+TConnection::setSocket(TSocket *socket){
     if(socket) {
         LOG_DEBUG("TConnection 重新设置 socket \n");
         socket_ = socket;
@@ -219,7 +215,6 @@ void
 TConnection::close(){
     // if(socket_)
     //     socket_->close();
-
     if(bev != NULL){
         // 释放 TSocket 上建立的 bufferevent
         bufferevent_free(bev);
@@ -287,7 +282,6 @@ void
 TConnection::workSocket(){
     switch(socketState){
         case SocketState::SOCKET_RECV_FRAMING:
-            // LOG_DEBUG("SocketState::SOCKET_RECV_FRAMING   开始接受数据\n");
             recv_framing();
             break;
         case SocketState::SOCKET_RECV:
@@ -296,21 +290,18 @@ TConnection::workSocket(){
         default:
             break;
     }
-    // LOG_DEBUG("Work Socket end\n");
 }
 
 void
 TConnection::recv_framing(){
     struct evbuffer *input = bufferevent_get_input(bev);
-    // LOG_DEBUG("before read input length = %lu\n", evbuffer_get_length(input));
     struct evbuffer_iovec image;
     int ret = evbuffer_peek(input, -1, NULL, &image, 1);
     if (ret){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
-
-        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
-
+        // 打印接受的数据
+        // LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             // LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
             if(framePos > 0){
@@ -320,7 +311,6 @@ TConnection::recv_framing(){
             // 接收到一个完整的数据包，开始处理数据包
             transition();
         }else if(framePos > 0){
-
             // HTTP 请求入口
             Buffer buf;
             buf.append(image.iov_base,image.iov_len);
@@ -336,10 +326,9 @@ TConnection::recv_framing(){
 }
 
 bool TConnection::transMessage(Package *out) {
-    if (NULL != out) {
-        if (0 == bufferevent_write(bev, out->getRawData(), out->getRawDataLength())) {
-            return true;
-        }
+    if (NULL != out && 0 == bufferevent_write(bev, out->getRawData(), out->getRawDataLength())) {
+        LOG_DEBUG("报文下行成功\n");
+        return true;
     }
     return false;
 }

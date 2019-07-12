@@ -1,10 +1,11 @@
 #include "ChatMessage.h"
 
+// 注册业务流程有两种：
+// １．接受客户端的申请
+// ２．设置账号密码
 Package *ChatMessage::process(Json::Value &root){
     try{
-        std::string id = root["id"].asString();
-        std::string message = root["message"].asString();
-        LOG_DEBUG("注册账户 id[%s] message[%s]\n",id.data(),message.data());
+
     }catch (std::exception &e) {
         LOG_ERROR("json error:%s", e.what());
     }

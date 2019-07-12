@@ -36,7 +36,9 @@ Package *ChatAdapter::adapter(Package *package){
         if (Json::Reader().parse((char *)chatPkg->data(), root)){
             auto proc = processMap.find(root["cmd"].asString());
             if(proc!=processMap.end()){
-                proc->second->process(root);
+                auto pkg = proc->second->process(root);
+                // 下行报文
+                return pkg;
             }
         }else{
             LOG_INFO("json reader parse don't match\n");

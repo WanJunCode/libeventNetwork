@@ -4,19 +4,18 @@ user table
     age int
     passwd varchar(30)
     email  varchar(30)
-
 }
 
 注册 signin
-{
-    "cmd":"signin",
-    "email":"wanjuncode@163.com",
-    "passwd":"wanjun123"
-}
+
 
 注册业务流程
-client 发起注册请求,给予email
+client 发起注册请求,给予email　，　验证码发送到邮箱（省略）
+client->server      {"cmd":"signin","phone":"18079140109"}
 server 返回id / email 已经被注册
+server->client      {"cmd":"signin","id":"12345678"}  {"cmd":"signin","id":null}
+client 可以注册，设置密码
+client->server      {"cmd":"signin","id":"12345678","password":"wanjun123"}
 
 注册成功
 {"cmd":"signin","id":"104544"}

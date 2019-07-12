@@ -17,6 +17,7 @@ public:
     ~MysqlWrapper();
 
     void test();
+    const char *createAccount(const char *phone);
 };
 
 
