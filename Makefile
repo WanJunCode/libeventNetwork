@@ -15,7 +15,7 @@ LIB := -levent -pthread -lhiredis -ljsoncpp -llog4cpp -lmysqlpp -lmysqlclient
 
 all:
 	mkdir -p $(BIN) && mkdir -p $(OUTPUT)
-	$(CXX) $(DEBUG_CFLAGS) $(ALL_CPP) -o $(BIN)/$(EXECUTABLE) $(LIB)
+	$(CXX) $(DEBUG_CFLAGS) $(ALL_CPP) -o $(BIN)/$(EXECUTABLE) $(LIB) 
 
 .PHONY: clean start
 clean:

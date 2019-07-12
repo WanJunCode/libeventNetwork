@@ -40,7 +40,7 @@ public:
 	std::shared_ptr<MysqlWrapper> getMysqlWrapper();
 	MysqlConn *grab();
 	void release(MysqlConn *conn);
-	void debug();
+	std::string debug();
 private:
 	MysqlConn *createOneConnect();
 private:

@@ -1,17 +1,15 @@
-#ifndef __TCONNECTION_H__
-#define __TCONNECTION_H__
+#ifndef LIBEVENTNETWORK_MAIN_TCONNECTION_H_
+#define LIBEVENTNETWORK_MAIN_TCONNECTION_H_
 
 #include "TSocket.h"
 #include "MainServer.h"
+#include "IOThread.h"
 #include "../base/Buffer.h"
+#include "../Package/Package.h"
+#include "../Package/ChatPackage.h"
 
 #include <event.h>
 #include <boost/any.hpp>
-
-class TSocket;
-class MainServer;
-class IOThread;
-class Package;
 
 /// Three states for sockets: recv frame size, recv data, and send mode
 enum class SocketState { SOCKET_RECV_FRAMING, SOCKET_RECV, SOCKET_SEND };
@@ -37,7 +35,6 @@ enum class AppState {
 // TConnection 只负责 TSocket 的快速启用 bufferevent
 // 析构函数中并不会关闭传入的 TSocket
 // evebtbase 来自 MainServer 或者 IOThread
-class ChatPackage;
 class TConnection
 {
 public:
@@ -50,8 +47,6 @@ public:
     void transition();
     void setSocket(TSocket *socket);
     void close();
-    MainServer *getServer();
-    TSocket *getSocket();
     bool notify();
     void heartBeat();
     void record(std::string message);
@@ -69,17 +64,22 @@ public:
         return heartBeat_;
     }
 
-    void setContext(boost::any &any){
-        context_ = any;
+    MainServer *getServer(){
+        return server_;
     }
 
-    boost::any& getContext(){
-        return context_;
+    TSocket *getSocket(){
+        return socket_;
     }
 
-    int write(Buffer& buf);
+    int writeBuffer(Buffer& buf){
+        return write(buf.peek(), buf.readableBytes());
+    }
 
-    int write(const char *data,size_t length);
+    int write(const char *data,size_t length){
+        LOG_DEBUG("http response [%s]\n",std::string(data,length).data());
+        return bufferevent_write(bev, data, length);
+    }
 
 private:
     void read_request();
@@ -100,8 +100,6 @@ private:
     /// Read buffer
     size_t frameSize_;
     size_t maxBufferSize_;
-
-    boost::any context_;
 
 private:
     static void read_cb(struct bufferevent *bev, void *args);
