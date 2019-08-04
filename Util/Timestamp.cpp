@@ -10,8 +10,7 @@
 #include <inttypes.h>
 
 // 静态断言
-// static_assert(sizeof(Timestamp) == sizeof(int64_t),
-//               "Timestamp is same size as int64_t");
+// static_assert(sizeof(Timestamp) == sizeof(int64_t), "Timestamp is same size as int64_t");
 
 std::string Timestamp::toString() const{
     char buf[32] = {0};
@@ -45,6 +44,7 @@ std::string Timestamp::toFormattedString(bool showMicroseconds) const{
     return buf;
 }
 
+// 获得当前的时间
 Timestamp Timestamp::now(){
     struct timeval tv;
     gettimeofday(&tv, NULL);
