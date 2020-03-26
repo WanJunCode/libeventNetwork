@@ -68,7 +68,7 @@ void MainServer::init(){
     // 创建服务器监听器
     listener_ = make_shared<PortListener>(this,backlog_);
 
-    // 创建线程池
+    // 创建线程池并设置线程数量
     threadPool_.reset(new MThreadPool("MainThreadPool"));
     threadPool_->setMaxQueueSize(40);
     threadPool_->start(POOL_SIZE);
@@ -76,7 +76,9 @@ void MainServer::init(){
     // 创建io子线程,并加入线程池中运行
     iothreads_.reserve(iothreadSize_);
     for(size_t i=0;i<iothreadSize_;i++){
+        // 创建新的 IOThread 并添加到线程池中
         iothreads_.push_back(std::make_shared<IOThread>(this));
+        // std::shared_ptr<>::get() 获得原始指针
         threadPool_->run(std::bind(&IOThread::runInThread,iothreads_.back().get()));
     }
 
@@ -173,6 +175,7 @@ void MainServer::handlerConn(void *args)
         if(conn){
             // 开启 connection 的 bufferevent
             conn->notify();
+            // 所有的TConnection 由MainServer管理，但是分派到不同的线程中进行数据读取与发送
             activeTConnection.push_back(conn);
         }else{
             LOG_DEBUG("socket --> TConnection 失败 ...\n");

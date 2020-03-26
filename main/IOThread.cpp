@@ -61,36 +61,32 @@ IOThread::~IOThread()
 
 void IOThread::start()
 {
+
+}
+
+void IOThread::runInThread()
+{
     threadId_ = pthread_self();
 
     if(base_ == NULL){
-        // 在新的线程上创建一个 eventbase
-        base_ = event_base_new();
+        base_ = event_base_new();// 在新的线程上创建一个 eventbase
     }
     // 创建 notification 管道
     createNotificationPipe();
 
-    // 为接受管道设置一个 读取事件 notificationEvent_
-    event_set(&notificationEvent_,
-          getNotificationRecvFD(),
-          EV_READ | EV_PERSIST,
-          IOThread::notifyHandler,
-          this);
+    // 为接受管道设置一个读取事件 notificationEvent_, 只要管道中接收到数据便会回调
+    event_set(&notificationEvent_, getNotificationRecvFD(), EV_READ | EV_PERSIST, IOThread::notifyHandler, this);
 
     // Attach to the base
     event_base_set(base_, &notificationEvent_);
 
-    // Add the event and start up the server
     // if (-1 == event_add(&notificationEvent_, 0)) {
     if (-1 == event_add(&notificationEvent_, NULL)) {
         // time is NULL means wait forever
         LOG_DEBUG("TNonblockingServer::serve(): event_add() failed on task-done notification event");
     }
-}
 
-void IOThread::runInThread()
-{
-    start();
+    // 开启线程中的事件循环
     event_base_dispatch(base_);
 }
 
@@ -191,6 +187,8 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
     } while (true);
 }
 
+// 在 IOThread 线程中激活一个连接
+// 将参数 TConnection* conn 通过管道发送出去
 bool IOThread::notify(TConnection* conn) {
     evutil_socket_t fd = getNotificationSendFD();
     if (fd < 0) {

@@ -162,7 +162,6 @@ TConnection::transition()
                 bufferevent_setwatermark(bev, EV_READ, readWant_, maxBufferSize_);
             }
             break;
-
         case AppState::APP_READ_REQUEST:
             read_request();
             break;
