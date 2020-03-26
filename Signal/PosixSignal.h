@@ -1,7 +1,7 @@
 #ifndef __WJ_POSIX_SIGNAL_H
 #define __WJ_POSIX_SIGNAL_H
 
-class PosixSignal {
+class PosixSignal{
 public:
     static void register_signals();
     static int sigignore(int sig);

@@ -200,7 +200,7 @@ protected:
     } socket_setting_t;
 
     /** Underlying socket handle 内部的socket句柄*/
-    evutil_socket_t socket_; // TSocket 封装的 socket_
+    evutil_socket_t socket_;
 
     /** socket information socket 信息*/
     socket_info_t socket_info_;

@@ -23,12 +23,12 @@ void PosixSignal::register_signals() {
         sigignore(signal_ignore_array[i]);
 }
 
-// 忽略信号的处理
 int PosixSignal::sigignore(int sig) {
     struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
+    sa.sa_handler = SIG_IGN;    // 设置信号处理动作为忽略
     sa.sa_flags = 0;
 
+    // 清空要屏蔽的信号集
     if (sigemptyset(&sa.sa_mask) == -1 || sigaction(sig, &sa, 0) == -1)
         return -1;
 
@@ -36,34 +36,35 @@ int PosixSignal::sigignore(int sig) {
 }
 
 void PosixSignal::signalHandler(int sig) {
+    // getpid() 获得进程当前的 ID
     LOG_DEBUG("process[%d] received signal:%d", getpid(), sig);
 
     switch (sig) {
-    case SIGTERM: //�������(terminate)�ź�, ��SIGKILL��ͬ���Ǹ��źſ��Ա������ʹ���ͨ������Ҫ������Լ������˳���shell����killȱʡ��������źš����������ֹ���ˣ����ǲŻ᳢��SIGKILL
+    case SIGTERM: 
         LOG_DEBUG("Process[%d] signal[%d]: Illegal address, including memory address alignment (alignment) error", getpid(), sig);
         break;
-    case SIGILL: //ִ���˷Ƿ�ָ��. ͨ������Ϊ��ִ���ļ�������ִ���, ������ͼִ�����ݶ�. ��ջ���ʱҲ�п��ܲ�������ź�
+    case SIGILL: 
         LOG_DEBUG("Process[%d] signal[%d]: Illegal directives were executed. Usually because of an error in the executable itself", getpid(), sig);
         break;
-    case SIGBUS: //�Ƿ���ַ, �����ڴ��ַ����(alignment)�����������һ���ĸ��ֳ�������, �����ַ����4�ı���������SIGSEGV���������ں��������ڶԺϷ��洢��ַ�ķǷ����ʴ�����(����ʲ������Լ��洢�ռ��ֻ���洢�ռ�)
+    case SIGBUS:
         LOG_DEBUG("Process[%d] signal[%d]: Illegal address, including memory address alignment (alignment) error. For example, a four-word integer is accessed, but its address is not a multiple of 4. It differs from SIGSEGV in that the latter is triggered by illegal access to legitimate storage addresses (such as access that is not part of its own storage space or read-only storage).", getpid(), sig);
         break;
-    case SIGABRT: //����abort�������ɵ��ź�
+    case SIGABRT:
         LOG_DEBUG("Process[%d] signal[%d]: Exit instructions issued by abort (3)", getpid(), sig);
         break;
-    case SIGSYS: //�Ƿ���ϵͳ���� (SVID)
+    case SIGSYS:
         LOG_DEBUG("Process[%d] signal[%d]: Invalid system call (Svid)", getpid(), sig);
         break;
-    case SIGFPE: //�ڷ��������������������ʱ����. �������������������, ���������������Ϊ0���������е������Ĵ���
+    case SIGFPE:
         LOG_DEBUG("Process[%d] signal[%d]: Emitted when a fatal arithmetic operation error occurs. Includes not only floating-point arithmetic errors, but also all other arithmetic errors such as overflow and divisor 0.", getpid(), sig);
         break;
-    case SIGSTOP: //ֹͣ(stopped)���̵�ִ��. ע������terminate�Լ�interrupt������:�ý��̻�δ����, ֻ����ִͣ��. ���źŲ��ܱ�����, ��������
+    case SIGSTOP:
         LOG_DEBUG("Process[%d] signal[%d]: Stop (stopped) the execution of the process. Notice the difference between it and terminate and interrupt: The process is not finished, it's just suspending execution. This signal cannot be blocked, processed or ignored.", getpid(), sig);
         break;
-    case SIGSEGV: //��ͼ����δ������Լ����ڴ�, ����ͼ��û��дȨ�޵��ڴ��ַд����.
+    case SIGSEGV:
         LOG_DEBUG("Process[%d] signal[%d]: An attempt was made to access memory that was not assigned to itself, or to write data to a memory address that did not have write access. ", getpid(), sig);
         break;
-    case SIGQUIT: //��SIGINT����, ����QUIT�ַ�(ͨ����Ctrl-\)������. ���������յ�SIGQUIT�˳�ʱ�����core�ļ�, �����������������һ����������ź�
+    case SIGQUIT:
         LOG_DEBUG("Process[%d] signal[%d]: A process produces a core file when it exits Sigquit, in the sense that it is similar to a program error signal", getpid(), sig);
         break;
     case SIGUSR1:
@@ -74,14 +75,14 @@ void PosixSignal::signalHandler(int sig) {
         // TMultiProcess::getInstance().checkChildren();
         return;
     default:
-        signal(sig, signalHandler);
+        LOG_DEBUG("======process[%d] unrecognized signal captureed======", getpid());
         return;
     }
-// 判断是否支持多进程
+
 #ifndef SUPPORT_MULTI_PROCESS
     recordCrashInfo();
 #else
-    if (TMultiProcess::getInstance().get_pid() != getpid()) { //�ӽ����쳣���ռ�������Ϣ
+    if (TMultiProcess::getInstance().get_pid() != getpid()) { 
         recordCrashInfo();
     }
 #endif

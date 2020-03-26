@@ -16,26 +16,25 @@ class HttpResponse;
 /// It is synchronous, just like Java Servlet.
 class HttpServer: public noncopyable
 {
- public:
-  typedef std::function<void (const HttpRequest&,
-                              HttpResponse*)> HttpCallback;
+  public:
+    typedef std::function<void (const HttpRequest&, HttpResponse*)> HttpCallback;
 
-  HttpServer();
-  ~HttpServer();
+    HttpServer();
+    ~HttpServer();
 
-  /// Not thread safe, callback be registered before calling start().
-  void setHttpCallback(HttpCallback cb)
-  {
-    httpCallback_ = cb;
-  }
+    /// Not thread safe, callback be registered before calling start().
+    void setHttpCallback(HttpCallback cb)
+    {
+      httpCallback_ = cb;
+    }
 
-  void response(TConnection *conn);
-  bool onMessage(TConnection *conn, Buffer& buf);
-  void onRequest(TConnection *conn, HttpRequest &request);
+    void response(TConnection *conn);
+    bool onMessage(TConnection *conn, Buffer& buf);
+    void onRequest(TConnection *conn, HttpRequest &request);
 
- private:
+  private:
 
-  HttpCallback httpCallback_;       // std::function 回调函数　当接受到完整的http请求后处理
+    HttpCallback httpCallback_;       // std::function 回调函数　当接受到完整的http请求后处理
 };
 
 #endif  // MUDUO_NET_HTTP_HTTPSERVER_H

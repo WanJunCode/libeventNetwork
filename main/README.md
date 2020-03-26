@@ -3,9 +3,9 @@
 
 一. 各个类的简述
 MainServer
-作为最主要的服务器类，中间组合了 MyTransport (作为监听器) IOThread (多线程运行libevent)
+作为最主要的服务器类，中间组合了 PortListener (作为监听器) IOThread (多线程运行libevent)
 
-MyTransport
+PortListener
 监听器类，负责 new client 的连接
 
 IOThread
@@ -22,13 +22,13 @@ TConnection
 
 二. 业务流程
 具体流程
-MyTransport 在 MainServer 中启动，开启一个监听器绑定在 MainServer 的 eventBase 上。
+PortListener 在 MainServer 中启动，开启一个监听器绑定在 MainServer 的 eventBase 上。
 
 // 新的客户端连接
-MyTransport  ==>  TSocket  ==>  MainServer ==> TConnection  =(使用管道)=>  IOThread  ==>  libevent 监听事件
+PortListener  ==>  TSocket  ==>  MainServer ==> TConnection  =(使用管道)=>  IOThread  ==>  libevent 监听事件
 
 // 客户端断开连接
-TConnection  ==>  MainServer  ==>  MyTransport 回收 TSocket
+TConnection  ==>  MainServer  ==>  PortListener 回收 TSocket
                               ==>  回收 TConnection
                               ==>  TConnection  设置内部 socket 为 null
 

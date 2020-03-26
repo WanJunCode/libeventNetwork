@@ -28,8 +28,8 @@ void MainServer::httpcb(const HttpRequest& req,HttpResponse* resp){
     oss<<"from :Cloud Server"<<endl;
     oss<<"connection vector size ="<<activeTConnection.size()<<endl;
     oss<<"connection queue size ="<<connectionQueue.size()<<endl;
-    oss<<"transport activeSokcet size = "<<transport_->getActiveSize()<<endl;
-    oss<<"transport socketqueue size = "<<transport_->getSocketQueue()<<endl;
+    oss<<"transport activeSokcet size = "<<listener_->getActiveSize()<<endl;
+    oss<<"transport socketqueue size = "<<listener_->getSocketQueue()<<endl;
     oss<<MysqlPool::getInstance()->debug();
     resp->setBody(oss.str());
 }
@@ -58,12 +58,17 @@ MainServer::MainServer(MainConfig *config)
     init();
 }
 
+// 主服务器初始化
 void MainServer::init(){
     main_base = event_base_new();
     if(main_base == NULL){
         LOG_FATAL("MainServer event base new failure ...\n");
     }
-    transport_ = make_shared<MyTransport>(this,backlog_);
+
+    // 创建服务器监听器
+    listener_ = make_shared<PortListener>(this,backlog_);
+
+    // 创建线程池
     threadPool_.reset(new MThreadPool("MainThreadPool"));
     threadPool_->setMaxQueueSize(40);
     threadPool_->start(POOL_SIZE);
@@ -127,14 +132,18 @@ MainServer::~MainServer(){
     event_base_free(main_base);
 }
 
+// 开启服务器
 void MainServer::serve(){
     LOG_DEBUG("serve() ... start \n");
-    // 添加一个 控制台输入事件
+    // 添加一个控制台输入事件
     ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdinCallBack, this);
     event_add(ev_stdin, NULL);
 
-    transport_->listen(port_);
+    // 将 MainServer 提供self作为回调函数参数
+    // 当有新的连接，会回调 MainServer::handlerConn 函数
+    listener_->listen(this,port_);
 
+    // !! import 开启整个程序的主循环
     event_base_dispatch(main_base);
     LOG_DEBUG("serve() ... end \n");
 }
@@ -142,35 +151,29 @@ void MainServer::serve(){
 // server 处理 来自 transport 的 client_conn
 void MainServer::handlerConn(void *args)
 {
+    TSocket *sock = (TSocket *)args;
     // LOG_DEBUG("main server handler client_conn \n");
-
-    MyTransport *transport = (MyTransport *)args;
-    TSocket *sock = transport->accept();
     // LOG_DEBUG("sock->getSocketFD() = [%d] \n", sock->getSocketFD());
-
     // 将接受的 TSocket 包装成 TConnection ， 使用 main_server->eventbase
     TConnection *conn;
     {
         std::lock_guard<std::mutex> locker(connMutex);
         if (connectionQueue.empty()){
             ++selectIOThread_;
+            // Load balancing  负载均衡
             selectIOThread_ = selectIOThread_ % IOTHREAD_SIZE;
-            // LOG_DEBUG("select iothread num： [%d]\n",selectIOThread_);
             // 选择 iothread 创建 TConnection
             conn = new TConnection(sock, iothreads_[selectIOThread_].get());
-            // LOG_DEBUG("新建一个 TConnection \n");
         }else{
             conn = connectionQueue.front();
             connectionQueue.pop();
             conn->setSocket(sock);
-            // LOG_DEBUG("复用一个 TConnection \n");
         }
 
         if(conn){
             // 开启 connection 的 bufferevent
             conn->notify();
             activeTConnection.push_back(conn);
-            // LOG_DEBUG("mainserver active push back conn\n");
         }else{
             LOG_DEBUG("socket --> TConnection 失败 ...\n");
         }
@@ -184,7 +187,7 @@ void MainServer::returnTConnection(TConnection *conn){
     // 获得 TConnection 包装的 socket
     TSocket *sock = conn->getSocket();
     // 回收 sock
-    transport_->returnTSocket(sock);
+    listener_->returnTSocket(sock);
     // 回收 TConnection : stdLLvector 中的删除形式
     activeTConnection.erase(std::remove(activeTConnection.begin(),
                                         activeTConnection.end(), conn),
@@ -214,8 +217,8 @@ void MainServer::execute(std::string cmd,MainServer *server){
     if (cmd == "list"){
         LOG_DEBUG("connection vector size %lu \n", server->activeTConnection.size());
         LOG_DEBUG("connection queue size %lu \n", server->connectionQueue.size());
-        LOG_DEBUG("transport activeSokcet size = %d\n",server->transport_->getActiveSize());
-        LOG_DEBUG("transport socketqueue size = %d\n",server->transport_->getSocketQueue());
+        LOG_DEBUG("transport activeSokcet size = %d\n",server->listener_->getActiveSize());
+        LOG_DEBUG("transport socketqueue size = %d\n",server->listener_->getSocketQueue());
         MysqlPool::getInstance()->debug();
     }else if(cmd == "hb"){
         LOG_DEBUG("heart beat\n");

@@ -1,7 +1,7 @@
 #ifndef LIBNETWORK_MAIN_MAINSERVER_H_
 #define LIBNETWORK_MAIN_MAINSERVER_H_
 
-#include "MyTransport.h"
+#include "PortListener.h"
 #include "TSocket.h"
 #include "TConnection.h"
 #include "ThreadPool.h"
@@ -63,6 +63,10 @@ public:
       return http;
     }
 
+    std::shared_ptr<PortListener> getListener(){
+      return listener_;
+    }
+
     void httpcb(const HttpRequest& req,HttpResponse* resp);
 
 private:
@@ -80,9 +84,9 @@ private:
     std::mutex connMutex; // 处理连接时，以及返回连接时候
 
     std::unique_ptr<MThreadPool> threadPool_;
-    std::shared_ptr<RedisPool> redisPool;   // redis 连接池
-    std::shared_ptr<Protocol> protocol_;     // 协议解析器
-    std::shared_ptr<MyTransport> transport_; // 监听器
+    std::shared_ptr<RedisPool> redisPool;   	// redis 连接池
+    std::shared_ptr<Protocol> protocol_;     	// 协议解析器
+    std::shared_ptr<PortListener> listener_; 	// 监听器
     std::shared_ptr<TimerManager> timerMgr_;
     
 

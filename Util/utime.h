@@ -16,7 +16,6 @@
  * platform dependent stuff.  Rather it should be inluded directly in
  * concurrency library implementation source.
  *
- * @version $Id:$
  */
 class Util {
 public:
@@ -32,7 +31,7 @@ public:
     /**
      * Converts millisecond timestamp into a THRIFT_TIMESPEC struct
      *
-     * @param struct THRIFT_TIMESPEC& result
+     * @param struct THRIFT_TIMESPEC& result    [out]
      * @param time or duration in milliseconds
      */
     static void toTimespec(struct timespec& result, int64_t value) {
@@ -54,6 +53,7 @@ public:
             ++result;
         }
     }
+    
     /**
      * Converts struct THRIFT_TIMESPEC to arbitrary-sized ticks since epoch
      */
