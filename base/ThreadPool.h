@@ -14,7 +14,7 @@ class MThreadPool : noncopyable{
 public:
     typedef std::function<void ()> Task;
 
-    explicit MThreadPool(const std::string& nameArg = std::string("ThreadPool"));
+    explicit MThreadPool(const std::string& nameArg = std::string("Thread Pool"));
     ~MThreadPool();
 
     // Must be called before start().
@@ -48,7 +48,7 @@ private:
     Condition notFull_;
     std::string name_;              // 线程池名称
     Task threadInitCallback_;       // 线程初始化回调函数
-    std::vector<std::unique_ptr<Thread>> threads_;
+    std::vector<std::unique_ptr<Thread>> threadVector;
     std::deque<Task> queue_;
     size_t maxQueueSize_;
     bool running_;

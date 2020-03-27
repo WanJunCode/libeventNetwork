@@ -43,28 +43,28 @@ public:
     void heartBeat();
 
     void run(MThreadPool::Task task){
-      threadPool_->run(task);
+        threadPool_->run(task);
     }
 
     std::shared_ptr<Protocol> getProtocol(){
-      return protocol_;
+        return protocol_;
     }
     struct event_base *getBase(){
-      return main_base;
+        return main_base;
     }
     inline std::shared_ptr<Redis> getRedis(){
-      return redisPool->grabCedis();
+        return redisPool->grabCedis();
     }
     inline int getBufferSize() const{
-      return maxBufferSize_;
+        return maxBufferSize_;
     }
 
     HttpServer& gethttp(){
-      return http;
+        return http;
     }
 
     std::shared_ptr<PortListener> getListener(){
-      return listener_;
+        return listener_;
     }
 
     void httpcb(const HttpRequest& req,HttpResponse* resp);

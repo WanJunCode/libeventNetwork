@@ -93,25 +93,28 @@ void IOThread::createNotificationPipe()
         LOG_DEBUG("can't create notification pipe, error:[%d]\n",EVUTIL_SOCKET_ERROR());
         return;
     }
+    // 读写管道设置为非阻塞模式，总是可读可写
     if(evutil_make_socket_nonblocking(notificationPipeFDs_[0]) < 0
         || evutil_make_socket_nonblocking(notificationPipeFDs_[1]) < 0 )
     {
             EVUTIL_CLOSESOCKET(notificationPipeFDs_[0]);
             EVUTIL_CLOSESOCKET(notificationPipeFDs_[1]);
-            LOG_DEBUG("TNonblockingServer::createNotificationPipe() THRIFT_O_NONBLOCK\n");
+            LOG_ERROR("TNonblockingServer::createNotificationPipe() THRIFT_O_NONBLOCK\n");
             return;
     }
 
     for (int i = 0; i < 2; ++i) {
+        // 设置当调用exec()会关闭指定的套接字
         if (evutil_make_socket_closeonexec(notificationPipeFDs_[i]) < 0) {
             EVUTIL_CLOSESOCKET(notificationPipeFDs_[0]);
             EVUTIL_CLOSESOCKET(notificationPipeFDs_[1]);
-            LOG_DEBUG("TNonblockingServer::createNotificationPipe() FD_CLOEXEC");
+            LOG_ERROR("TNonblockingServer::createNotificationPipe() FD_CLOEXEC");
             return;
         }
     }
 }
 
+// 退出IO Thread的事件循环
 void IOThread::breakLoop(bool error) {
     if (error) {
         LOG_DEBUG("TNonblockingServer: IO thread #%d exiting with error.\n", threadId_);

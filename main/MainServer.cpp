@@ -73,6 +73,7 @@ void MainServer::init(){
     threadPool_->setMaxQueueSize(40);
     threadPool_->start(POOL_SIZE);
 
+    // TODO  使用信号量同步 IO Thread线程是否全部启动
     // 创建io子线程,并加入线程池中运行
     iothreads_.reserve(iothreadSize_);
     for(size_t i=0;i<iothreadSize_;i++){

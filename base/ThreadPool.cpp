@@ -22,17 +22,19 @@ MThreadPool::~MThreadPool(){
     LOG_INFO("muduo thread pool desc\n");
 }
 
+// 开启线程池，参数numThreads表示线程数量
 void MThreadPool::start(int numThreads){
-    assert(threads_.empty());
+    assert(threadVector.empty());
     running_ = true;
-    threads_.reserve(numThreads);
+    threadVector.reserve(numThreads);
     for (int i = 0; i < numThreads; ++i){
         char id[32];
         snprintf(id, sizeof id, "%d", i+1);
         // 绑定 pool 的 runInThread 函数
-        threads_.emplace_back(new Thread(
-              std::bind(&MThreadPool::runInThread, this), name_+id));
-        threads_[i]->start();
+        // Thread都会执行MThreadPool::runInThread函数
+        threadVector.emplace_back(new Thread(std::bind(&MThreadPool::runInThread, this), 
+                                name_+id));
+        threadVector[i]->start();
     }
     // 如果不是多线程 并且有线程初始化回调函数
     if (numThreads == 0 && threadInitCallback_){
@@ -46,7 +48,7 @@ void MThreadPool::stop(){
         running_ = false;
         notEmpty_.notifyAll();      // 广播让所有的子线程结束
     }
-    for (auto& thr : threads_){
+    for (auto& thr : threadVector){
         thr->join();
     }
 }
@@ -60,7 +62,7 @@ size_t MThreadPool::queueSize() const{
 void MThreadPool::run(Task task){
     // LOG_DEBUG("thread pool run 新的任务\n");
     // 如果是单线程(子线程容器为空)，直接运行 task
-    if (threads_.empty()){
+    if (threadVector.empty()){
         task();
     }else{
         MutexGuard lock(mutex_);
