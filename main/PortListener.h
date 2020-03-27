@@ -28,7 +28,7 @@ private:
     std::mutex connMutex_;
     size_t backlog_;
     std::map<evutil_socket_t, TSocket *> activeSocket;
-    std::queue<TSocket *> socketQueue;
+    std::queue<TSocket *> reuseSocketQueue;
 };
 
 #endif

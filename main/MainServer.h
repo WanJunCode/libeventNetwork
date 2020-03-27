@@ -93,8 +93,8 @@ private:
     // 使用共享智能指针
     std::vector<std::shared_ptr<IOThread>> iothreads_;
     // 活动的连接
-    std::vector<TConnection *> activeTConnection;
-    std::queue<TConnection *> connectionQueue;
+    std::vector<TConnection *> activeTConnectionVector;
+    std::queue<TConnection *> ReuseConnectionQueue;
 
     HttpServer http;
 

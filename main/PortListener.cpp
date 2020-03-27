@@ -27,14 +27,14 @@ PortListener::~PortListener(){
     }
 
     // 清除  socket queue
-    LOG_DEBUG("listener size = [%lu]\n", socketQueue.size());
-    while (!socketQueue.empty()){
-        TSocket *tmp = socketQueue.front();
+    LOG_DEBUG("listener size = [%lu]\n", reuseSocketQueue.size());
+    while (!reuseSocketQueue.empty()){
+        TSocket *tmp = reuseSocketQueue.front();
         LOG_DEBUG("tsock tmp %x\n",tmp);
-        socketQueue.pop();
+        reuseSocketQueue.pop();
         delete tmp;
     }
-    LOG_DEBUG("listener size = [%lu]\n", socketQueue.size());
+    LOG_DEBUG("listener size = [%lu]\n", reuseSocketQueue.size());
 }
 
 // TODO listen函数从外部获得 struct event_base 用于注册监听回调函数
@@ -75,14 +75,14 @@ TSocket *PortListener::ReuseTSocket(evutil_socket_t client_fd){
     // RAII 最佳实践 (保护资源 )
     std::lock_guard<std::mutex> locker(connMutex_);
     // 复用一个 TSocket 完成对 client fd 的封装
-    if (socketQueue.empty()){
+    if (reuseSocketQueue.empty()){
         // 没有可复用的则创建新的 TSocket
         sock = new TSocket(client_fd);
     }else{
         // 在此处将最前端的TSocket复用，后面会 pop 弹出
-        sock = socketQueue.front();
+        sock = reuseSocketQueue.front();
         sock->setSocketFD(client_fd);
-        socketQueue.pop();
+        reuseSocketQueue.pop();
     }
     activeSocket.insert(std::pair<evutil_socket_t, TSocket *>(client_fd, sock));
     return sock;
@@ -119,7 +119,7 @@ void PortListener::returnTSocket(TSocket *sock){
 
         // 关闭回收的TSocket连接
         // delete sock;
-        socketQueue.push(sock);
+        reuseSocketQueue.push(sock);
     }
 }
 
@@ -128,5 +128,5 @@ int PortListener::getActiveSize(){
 }
 
 int PortListener::getSocketQueue(){
-    return socketQueue.size();
+    return reuseSocketQueue.size();
 }

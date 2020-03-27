@@ -15,9 +15,7 @@ TSocket
 对tcp底层api的封装
 
 TConnection
-对 TSocket & bufferevent 的封装，更好的处理 client 的 数据读取发送
-
-
+对 TSocket & bufferevent 的封装，更好的处理 client 的 数据读取发送, 会在绑定的IOThread上的eventbase创建事件处理
 
 
 二. 业务流程
@@ -33,7 +31,9 @@ TConnection  ==>  MainServer  ==>  PortListener 回收 TSocket
                               ==>  TConnection  设置内部 socket 为 null
 
 // 客户端数据处理
-
+bufferevent设置的read_cb()   ==>  workSocket()  ==>  recv_framing()
+// 客户端关闭处理
+bufferevent设置的error_cb()  ==>  TConnection::close()  ==>  MainServer::returnTConnection()  ==>  PortListener::returnTSocket()
 
 三. logcpp4cpp 的使用
 g++ 编译添加 -llogcpp4cpp
