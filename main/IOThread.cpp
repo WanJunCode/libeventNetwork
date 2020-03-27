@@ -49,19 +49,15 @@ IOThread::~IOThread()
         event_base_free(base_);
     }
 
+    //关闭与主线程通信的pipe
     for (int i = 0; i < 2; ++i) {
         if (notificationPipeFDs_[i] >= 0) {
             if (0 != EVUTIL_CLOSESOCKET(notificationPipeFDs_[i])) {
-                LOG_DEBUG("TNonblockingIOThread notificationPipe close(): ");
+                LOG_ERROR("TNonblockingIOThread notificationPipe close() ERROR");
             }
             notificationPipeFDs_[i] = INVALID_SOCKET;
         }
     }
-}
-
-void IOThread::start()
-{
-
 }
 
 void IOThread::runInThread()
@@ -131,6 +127,7 @@ void IOThread::breakLoop(bool error) {
     // same thread, this means the thread can't be blocking in the event
     // loop either.
     if (!pthread_equal(pthread_self(), threadId_)) {
+        // 其他线程通过notify关闭该 IOThread
         notify(NULL);
     } else {
         // cause the loop to stop ASAP - even if it has things to do in it
@@ -138,7 +135,69 @@ void IOThread::breakLoop(bool error) {
     }
 }
 
-// 从管道中读取 TConnection 并启动 bufferevent
+
+// 在 IOThread 线程中激活一个连接
+// 将参数 TConnection* conn 指针地址通过管道发送出去
+bool IOThread::notify(TConnection* conn) {
+    evutil_socket_t fd = getNotificationSendFD();
+    if (fd < 0) {
+        return false;
+    }
+
+    fd_set wfds, efds;
+    long ret = -1;
+    long kSize = sizeof(conn);
+    // make TConnection* conn ==> const char* pos 
+    const char* pos = reinterpret_cast<const char*>(&conn);
+
+    while (kSize > 0) {
+        FD_ZERO(&wfds);
+        FD_ZERO(&efds);
+        FD_SET(fd, &wfds);
+        FD_SET(fd, &efds);
+        // int select(int nfds,  fd_set* readset,  fd_set* writeset,  fe_set* exceptset,  struct timeval* timeout);
+        // (fd + 1) make sure select() will find the event happen on fd
+        // read   --  null
+        // write  --  wfds
+        // except --  efds
+        // timeout -- null is blocked . 0 is nonblocked
+        // the write pipe is always writeable, use this function to test write pipe fd is OK
+        ret = select(static_cast<int>(fd + 1), NULL, &wfds, &efds, NULL);
+        if (ret < 0) {
+            return false;
+        } else if (ret == 0) {
+            continue;
+        }
+
+        // if any except happen
+        if (FD_ISSET(fd, &efds)) {
+            EVUTIL_CLOSESOCKET(fd);
+            LOG_ERROR("Thread [%d] write pipe fd is except happen\n",pthread_self());
+            return false;
+        }
+
+        // 写管道是非阻塞的，总是可写
+        if (FD_ISSET(fd, &wfds)) {
+            LOG_DEBUG("Thread [%d] send TConnection from write pipe where address at [%x]\n",pthread_self(),pos);
+            ret = send(fd, pos, kSize, 0);
+            if (ret < 0) {
+                if (errno == EAGAIN) {
+                    continue;
+                }
+                EVUTIL_CLOSESOCKET(fd);
+                return false;
+            }
+            kSize -= ret;
+            pos += ret;
+        }
+    }
+
+    return true;
+}
+
+
+// 从管道中读取 TConnection *指针并启动 bufferevent
+// 如果读取到的是 NULL ，则关闭该 IOThread
 /* static */
 void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
     IOThread* ioThread = (IOThread*)v;
@@ -149,17 +208,19 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
         TConnection* connection = NULL;
         const int kSize = sizeof(connection);
 
-        // 将接收到的数据  写入connection
-        long nBytes = recv(fd, cast_sockopt(&connection), kSize, 0);
+        // 将接收到的数据 写入TConnection*指针指向的地址
+        long nBytes = recv(fd, reinterpret_cast<char *>(&connection), kSize, 0);
         if (nBytes == kSize) {
             if (NULL == connection) {
                 // this is the command to stop our thread, exit the handler!
+                LOG_DEBUG("thread [%d] read BULL from read pipe to terminate itself\n",pthread_self());
                 ioThread->breakLoop(false);
                 return;
             }
 
             // 接收到一个完整的 TConnection
             if (ioThread->getServer()->isActive(connection)) {
+                LOG_DEBUG("thread [%d] read TConnection from read pipe address at [%x]\n",pthread_self(),connection);
                 connection->transition();
             }
 
@@ -187,65 +248,4 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
         
         // already transition one connection
     } while (true);
-}
-
-// 在 IOThread 线程中激活一个连接
-// 将参数 TConnection* conn 通过管道发送出去
-bool IOThread::notify(TConnection* conn) {
-    evutil_socket_t fd = getNotificationSendFD();
-    if (fd < 0) {
-        return false;
-    }
-
-    fd_set wfds, efds;
-    long ret = -1;
-    long kSize = sizeof(conn);
-    // make TConnection* conn ==> const char* pos 
-    const char* pos = reinterpret_cast<const char*>(&conn);
-
-    while (kSize > 0) {
-
-        FD_ZERO(&wfds);
-        FD_ZERO(&efds);
-        FD_SET(fd, &wfds);
-        FD_SET(fd, &efds);
-        // int select(int nfds,  fd_set* readset,  fd_set* writeset,  fe_set* exceptset,  
-                    // struct timeval* timeout);
-        // (fd + 1) make sure select() will find the event happen on fd
-        // read   --  null
-        // write  --  wfds
-        // except --  efds
-        // timeout -- null is blocked . 0 is nonblocked
-        // the write pipe is always writeable, use this function to test write pipe fd is OK
-        ret = select(static_cast<int>(fd + 1), NULL, &wfds, &efds, NULL);
-        if (ret < 0) {
-            return false;
-        } else if (ret == 0) {
-            continue;
-        }
-
-        // if any except happen
-        if (FD_ISSET(fd, &efds)) {
-            EVUTIL_CLOSESOCKET(fd);
-            LOG_ERROR("Thread [%d] write pipe fd is except happen\n",pthread_self());
-            return false;
-        }
-
-        if (FD_ISSET(fd, &wfds)) {
-            ret = send(fd, pos, kSize, 0);
-            if (ret < 0) {
-                if (errno == EAGAIN) {
-                    continue;
-                }
-
-                EVUTIL_CLOSESOCKET(fd);
-                return false;
-            }
-
-            kSize -= ret;
-            pos += ret;
-        }
-    }
-
-    return true;
 }

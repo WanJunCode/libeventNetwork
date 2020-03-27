@@ -24,6 +24,7 @@ PortListener 在 MainServer 中启动，开启一个监听器绑定在 MainServe
 
 // 新的客户端连接
 PortListener  ==>  TSocket  ==>  MainServer ==> TConnection  =(使用管道)=>  IOThread  ==>  libevent 监听事件
+通过管道传输的实际是TConnection的指针，在64位操作系统上指针大小为8字节
 
 // 客户端断开连接
 TConnection  ==>  MainServer  ==>  PortListener 回收 TSocket
