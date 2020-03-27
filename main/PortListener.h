@@ -12,7 +12,7 @@ class TSocket;
 
 class PortListener{
 public:
-    explicit PortListener(size_t backlog = 10);
+    PortListener(size_t backlog = 10);
     ~PortListener();
     void listen(MainServer *server, int port);
     void returnTSocket(TSocket *sock);

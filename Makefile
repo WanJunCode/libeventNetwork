@@ -11,7 +11,7 @@ C_FLAGS := -std=c++11 -Wall -Wextra -ggdb
 DEBUG_CFLAGS := -std=c++11 -ggdb -Wall -ffunction-sections -O0 -Wno-format \
 -DDEBUG -DMYSQLPP_MYSQL_HEADERS_BURIED -DHAVE_SCHED_GET_PRIORITY_MAX -DLOG4CPP_FIX_ERROR_COLLISION -DLOG4CPP
 
-LIB := -levent -pthread -lhiredis -ljsoncpp -llog4cpp -lmysqlclient
+LIB := -L/usr/local/lib -levent -pthread -lhiredis -ljsoncpp -llog4cpp -lmysqlclient
 
 all:
 	mkdir -p $(BIN) && mkdir -p $(OUTPUT)

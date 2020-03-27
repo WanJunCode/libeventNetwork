@@ -66,7 +66,7 @@ void MainServer::init(){
     }
 
     // 创建服务器监听器
-    listener_ = make_shared<PortListener>(this,backlog_);
+    listener_ = make_shared<PortListener>(backlog_);
 
     // 创建线程池并设置线程数量
     threadPool_.reset(new MThreadPool("MainThreadPool"));
@@ -118,7 +118,7 @@ MainServer::~MainServer(){
 
     LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnection.size());
     for (size_t i = 0; i < activeTConnection.size(); i++){
-        delete activeTConnection[i];
+        connectionQueue.push(activeTConnection[i]);
     }
 
     LOG_DEBUG("Main server connection queue size = [%lu] \n", connectionQueue.size());
@@ -183,6 +183,7 @@ void MainServer::handlerConn(void *args)
     }
 }
 
+// TODO 
 void MainServer::returnTConnection(TConnection *conn){
     std::lock_guard<std::mutex> locker(connMutex);
     LOG_DEBUG("main server 回收 TConnection start ...\n");

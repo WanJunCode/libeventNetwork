@@ -26,15 +26,15 @@ PortListener::~PortListener(){
         listener_ = NULL;
     }
 
-    // 清除  active map
-
     // 清除  socket queue
     LOG_DEBUG("listener size = [%lu]\n", socketQueue.size());
     while (!socketQueue.empty()){
         TSocket *tmp = socketQueue.front();
+        LOG_DEBUG("tsock tmp %x\n",tmp);
         socketQueue.pop();
         delete tmp;
     }
+    LOG_DEBUG("listener size = [%lu]\n", socketQueue.size());
 }
 
 // TODO listen函数从外部获得 struct event_base 用于注册监听回调函数
@@ -78,7 +78,6 @@ TSocket *PortListener::ReuseTSocket(evutil_socket_t client_fd){
     if (socketQueue.empty()){
         // 没有可复用的则创建新的 TSocket
         sock = new TSocket(client_fd);
-        socketQueue.push(sock);
     }else{
         // 在此处将最前端的TSocket复用，后面会 pop 弹出
         sock = socketQueue.front();
@@ -98,8 +97,8 @@ void PortListener::do_accept(struct evconnlistener *listener, evutil_socket_t cl
     UNUSED(socklen);
     // LOG_DEBUG("new client connection [%d]...\n", client_fd);
     MainServer *server = (MainServer *)args;
-    std::shared_ptr<PortListener> listener = server->getListener();
-    TSocket *sock = listener_->ReuseTSocket(client_fd);
+    std::shared_ptr<PortListener> portListenser = server->getListener();
+    TSocket *sock = portListenser->ReuseTSocket(client_fd);
     server->handlerConn(sock);
 }
 

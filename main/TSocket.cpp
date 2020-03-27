@@ -85,6 +85,7 @@ TSocket::TSocket(const std::string &host, int port)
 
 TSocket::~TSocket()
 {
+    LOG_DEBUG("析构函数 TSOCK\n");
     close();
 }
 
