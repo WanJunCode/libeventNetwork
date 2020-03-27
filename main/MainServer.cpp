@@ -26,10 +26,10 @@ void MainServer::httpcb(const HttpRequest& req,HttpResponse* resp){
 
     std::ostringstream oss;
     oss<<"from :Cloud Server"<<endl;
-    oss<<"connection vector size ="<<activeTConnectionVector.size()<<endl;
-    oss<<"connection queue size ="<<ReuseConnectionQueue.size()<<endl;
-    oss<<"transport activeSokcet size = "<<listener_->getActiveSize()<<endl;
-    oss<<"transport socketqueue size = "<<listener_->getSocketQueue()<<endl;
+    oss<<"激活的 TConnection size ="<<activeTConnectionVector.size()<<endl;
+    oss<<"可复用的 TConnection size ="<<ReuseConnectionQueue.size()<<endl;
+    oss<<"激活的 TSocket size = "<<listener_->getActiveSize()<<endl;
+    oss<<"可复用的 TSocket size = "<<listener_->getSocketQueue()<<endl;
     oss<<MysqlPool::getInstance()->debug();
     resp->setBody(oss.str());
 }
