@@ -184,6 +184,8 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
 
             break;
         }
+        
+        // already transition one connection
     } while (true);
 }
 
@@ -198,6 +200,7 @@ bool IOThread::notify(TConnection* conn) {
     fd_set wfds, efds;
     long ret = -1;
     long kSize = sizeof(conn);
+    // make TConnection* conn ==> const char* pos 
     const char* pos = reinterpret_cast<const char*>(&conn);
 
     while (kSize > 0) {
@@ -206,6 +209,14 @@ bool IOThread::notify(TConnection* conn) {
         FD_ZERO(&efds);
         FD_SET(fd, &wfds);
         FD_SET(fd, &efds);
+        // int select(int nfds,  fd_set* readset,  fd_set* writeset,  fe_set* exceptset,  
+                    // struct timeval* timeout);
+        // (fd + 1) make sure select() will find the event happen on fd
+        // read   --  null
+        // write  --  wfds
+        // except --  efds
+        // timeout -- null is blocked . 0 is nonblocked
+        // the write pipe is always writeable, use this function to test write pipe fd is OK
         ret = select(static_cast<int>(fd + 1), NULL, &wfds, &efds, NULL);
         if (ret < 0) {
             return false;
@@ -213,8 +224,10 @@ bool IOThread::notify(TConnection* conn) {
             continue;
         }
 
+        // if any except happen
         if (FD_ISSET(fd, &efds)) {
             EVUTIL_CLOSESOCKET(fd);
+            LOG_ERROR("Thread [%d] write pipe fd is except happen\n",pthread_self());
             return false;
         }
 

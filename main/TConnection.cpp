@@ -176,7 +176,7 @@ TConnection::transition()
 
 void 
 TConnection::read_request(){
-    // LOG_DEBUG("读取到了一个完整的数据包 开始处理数据包\n");
+    LOG_DEBUG("读取到了一个完整的数据包 开始处理数据包\n");
     // 读取到了一个完整的数据包　｜｜　第二次读取到数据包剩余数据时
     // We are done reading the request, package the read buffer into transport
     // and get back some data from the dispatch function
@@ -187,7 +187,6 @@ TConnection::read_request(){
     struct evbuffer_iovec image;
     if (evbuffer_peek(input, -1, NULL, &image, 1)) {
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
-
         // 使用唯一指针来获得 数据包,防止数据包的多次复制
         Package *pkg = server_->getProtocol()->getOnePackage(tmp_ptr, frameSize_);
         if (!pkg) {
@@ -266,6 +265,7 @@ void TConnection::error_cb(struct bufferevent *bev, short what, void *args){
 
 // static
 void TConnection::read_cb(struct bufferevent *bev, void *args){
+    // connrction recv new data begin here
     UNUSED(bev);
     TConnection *conn = (TConnection*)args;
     conn->lastUpdate_ = time(NULL);
@@ -300,7 +300,7 @@ TConnection::recv_framing(){
         BYTE *tmp_ptr = static_cast<BYTE *>(image.iov_base);
         size_t framePos = 0;
         // 打印接受的数据
-        // LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
+        LOG_DEBUG("Recv RawData : [%s]\n", byteTohex((void *)tmp_ptr, image.iov_len).c_str());
         if(server_->getProtocol()->parseOnePackage(tmp_ptr,image.iov_len,framePos,frameSize_,readWant_)){
             // LOG_DEBUG("framepos [%d]  framesize [%d]  readwant [%d]\n",framePos,frameSize_,readWant_);
             if(framePos > 0){
