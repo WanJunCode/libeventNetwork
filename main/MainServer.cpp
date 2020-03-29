@@ -191,10 +191,8 @@ void MainServer::returnTConnection(TConnection *conn){
     std::lock_guard<std::mutex> locker(connMutex);
     LOG_DEBUG("main server 回收 TConnection start ...\n");
 
-    // 获得 TConnection 包装的 socket
-    TSocket *sock = conn->getSocket();
-    // 回收 sock
-    listener_->returnTSocket(sock);
+    // 获得 TConnection 包装的 socket 回收 sock
+    listener_->returnTSocket(conn->getSocket());
     // 回收 TConnection : std::vector 中的删除形式
     activeTConnectionVector.erase(std::remove(activeTConnectionVector.begin(),activeTConnectionVector.end(), conn),
                             activeTConnectionVector.end());
