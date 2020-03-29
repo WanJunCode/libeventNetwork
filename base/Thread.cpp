@@ -156,8 +156,9 @@ void Thread::start()
     }
     else
     {
-        // 在此等待 线程函数执行完毕
+        // 在此等待 线程函数初始化完毕
         latch_.wait();
+        LOG_DEBUG("thread [%d] initial successful\n",name());
         assert(tid_ > 0);
     }
 }

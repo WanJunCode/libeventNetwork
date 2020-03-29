@@ -22,7 +22,7 @@ MThreadPool::~MThreadPool(){
     LOG_INFO("muduo thread pool desc\n");
 }
 
-// 开启线程池，参数numThreads表示线程数量
+// 开启线程池，参数numThreads表示实际创建的线程数量
 void MThreadPool::start(int numThreads){
     assert(threadVector.empty());
     running_ = true;
@@ -32,10 +32,11 @@ void MThreadPool::start(int numThreads){
         snprintf(id, sizeof id, "%d", i+1);
         // 绑定 pool 的 runInThread 函数
         // Thread都会执行MThreadPool::runInThread函数
-        threadVector.emplace_back(new Thread(std::bind(&MThreadPool::runInThread, this), 
-                                name_+id));
+        threadVector.emplace_back(new Thread(std::bind(&MThreadPool::runInThread, this), name_+id));
         threadVector[i]->start();
     }
+    LOG_DEBUG("Thread Pool start all thread successful\n");
+
     // 如果不是多线程 并且有线程初始化回调函数
     if (numThreads == 0 && threadInitCallback_){
       threadInitCallback_();
@@ -109,9 +110,10 @@ void MThreadPool::runInThread(){
         // 执行 线程初始化回调函数
         if (threadInitCallback_){
             threadInitCallback_();
-        }while (running_){
+        }
+        while (running_){
             // std::funtional<void()>
-            Task task(take());
+            Task task(take());//程序在此阻塞，等待线程池任务队列中有新的任务出现
             if (task){
                 task();
             }

@@ -70,17 +70,19 @@ void MainServer::init(){
 
     // 创建线程池并设置线程数量
     threadPool_.reset(new MThreadPool("MainThreadPool"));
-    threadPool_->setMaxQueueSize(40);
-    threadPool_->start(POOL_SIZE);
+    threadPool_->setMaxQueueSize(40);//设置线程池的最大线程数量
+    threadPool_->start(POOL_SIZE);//开启线程
 
     // TODO  使用信号量同步 IO Thread线程是否全部启动
-    // 创建io子线程,并加入线程池中运行
+    // 创建IO Thread vector 并添加到线程池 threadPool_ 中运行
     iothreads_.reserve(iothreadSize_);
     for(size_t i=0;i<iothreadSize_;i++){
         // 创建新的 IOThread 并添加到线程池中
         iothreads_.push_back(std::make_shared<IOThread>(this));
         // std::shared_ptr<>::get() 获得原始指针
+        // 将 IOThread::runInThread 函数作为线程执行函数传入
         threadPool_->run(std::bind(&IOThread::runInThread,iothreads_.back().get()));
+        // run( std::function<void()> task )
     }
 
     redisPool = make_shared<RedisPool>(config_->redisConfig());
