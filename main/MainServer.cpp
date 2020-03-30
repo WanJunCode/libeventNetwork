@@ -176,7 +176,7 @@ void MainServer::handlerConn(void *args)
         }
 
         if(conn){
-            // 开启 connection 的 bufferevent
+            // 使用管道将指针发送给IOThread开启 connection 的 bufferevent
             conn->notify();
             // 所有的TConnection 由MainServer管理，但是分派到不同的线程中进行数据读取与发送
             activeTConnectionVector.push_back(conn);
