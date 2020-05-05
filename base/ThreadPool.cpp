@@ -39,7 +39,7 @@ void MThreadPool::start(int numThreads){
 
     // 如果不是多线程 并且有线程初始化回调函数
     if (numThreads == 0 && threadInitCallback_){
-      threadInitCallback_();
+        threadInitCallback_();
     }
 }
 
