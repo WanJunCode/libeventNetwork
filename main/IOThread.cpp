@@ -216,36 +216,32 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
         if (nBytes == kSize) {
             if (NULL == connection) {
                 // this is the command to stop our thread, exit the handler!
-                LOG_DEBUG("thread [%d] read BULL from read pipe to terminate itself\n",pthread_self());
+                LOG_WARN("thread [%d] read BULL from read pipe to terminate itself\n",pthread_self());
                 ioThread->breakLoop(false);
                 return;
             }
-
             // 接收到一个完整的 TConnection
             if (ioThread->getServer()->isActive(connection)) {
                 LOG_DEBUG("thread [%d] read TConnection from read pipe address at [%x]\n",pthread_self(),connection);
                 connection->transition();
             }
-
         } else if (nBytes > 0) {
             // throw away these bytes and hope that next time we get a solid read
-            LOG_DEBUG("notifyHandler: Bad read of %ld bytes, wanted %d\n", nBytes, kSize);
+            LOG_WARN("notifyHandler: Bad read of %ld bytes, wanted %d\n", nBytes, kSize);
             ioThread->breakLoop(true);
             return;
         } else if (nBytes == 0) {
-            LOG_DEBUG("notifyHandler: Notify socket closed!\n");
+            LOG_WARN("notifyHandler: Notify socket closed!\n");
             ioThread->breakLoop(false);
             // exit the loop
             break;
         } else { // nBytes < 0
-
             if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                LOG_DEBUG("TNonblocking: notifyHandler read() failed: [%d]\n",EVUTIL_SOCKET_ERROR());
+                LOG_WARN("TNonblocking: notifyHandler read() failed: [%d]\n",EVUTIL_SOCKET_ERROR());
                 ioThread->breakLoop(true);
                 return;
             }
             // exit the loop
-
             break;
         }
         

@@ -26,6 +26,10 @@ PortListener 在 MainServer 中启动，开启一个监听器绑定在 MainServe
 PortListener  ==>  TSocket  ==>  MainServer ==> TConnection  =(使用管道)=>  IOThread  ==>  libevent 监听事件
 通过管道传输的实际是TConnection的指针，在64位操作系统上指针大小为8字节
 
+TConnection创建分为两个阶段
+1.初始化阶段在IOThread的event_base上创建bufferevent、设置bufferevent回调函数、设置bufferevent的水位、暂时关bufferevent。
+2.在主线程上使用conn->notify()将指针通过管道发送给IOThread，在IOThread中完成transition()函数：开启bufferevent，设置水位
+
 // 客户端断开连接
 TConnection  ==>  MainServer  ==>  PortListener 回收 TSocket
                               ==>  回收 TConnection

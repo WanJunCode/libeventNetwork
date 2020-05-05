@@ -49,6 +49,7 @@ TConnection::TConnection(TSocket *sock, MainServer *server)
     init();
 }
 
+// 参数为 IOThread 的构造函数，从 iothread 中获得 event_base
 TConnection::TConnection(TSocket *sock, IOThread *iothread)
     : socket_(sock),
     iothread_(iothread),
@@ -87,7 +88,7 @@ TConnection::init(){
     bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
     if (bev) {
         if(socket_->getSocketFD() == INVALID_SOCKET){
-            LOG_DEBUG("socket is invalid\n");
+            LOG_ERROR("socket is invalid\n");
             // FD 无效
             struct sockaddr_in addr;
             memset(&addr,0,sizeof(addr));
@@ -96,7 +97,7 @@ TConnection::init(){
             addr.sin_port = htons(socket_->getLocalPort());
             bzero(&(addr.sin_zero),8);
             if( -1 == bufferevent_socket_connect(bev,(sockaddr*)&addr,sizeof(addr)) ){
-                LOG_DEBUG("TConnection fd [%d] bufferevent_socket_connect fail!\n",socket_->getSocketFD());
+                LOG_WARN("TConnection fd [%d] bufferevent_socket_connect fail!\n",socket_->getSocketFD());
                 close();
             }else{
                 LOG_DEBUG("TConnection fd [%d] init success!\n",socket_->getSocketFD());
@@ -104,7 +105,8 @@ TConnection::init(){
         }
 
         bufferevent_setcb(  bev, TConnection::read_cb, NULL, TConnection::error_cb, this);
-        bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
+        // 后续的transition()会设置水位
+        // bufferevent_setwatermark(bev, EV_READ | EV_WRITE, 0, maxBufferSize_);
 
         // 初始化后暂停 bufferevent的使用
         bufferevent_disable(bev,EV_READ | EV_WRITE);
@@ -192,7 +194,7 @@ TConnection::read_request(){
         if (!pkg) {
             LOG_ERROR("construct TPackage failure 数据包构造失败\n");
         } else {
-            // 适配器处理
+            // 根据数据包头部信息查找适配器
             auto adapter = AdapterMap::getInstance().queryAdapter(pkg->factoryCode);
             if(adapter){
                 // 如果 processtask 放入线程池中运行,不能使用栈变量,生存周期不够
@@ -203,6 +205,7 @@ TConnection::read_request(){
             }
         }
     }
+    // 丢弃已经处理的数据
     evbuffer_drain(input, frameSize_);
     // The application is now on the task to finish
     appstate = AppState::APP_INIT;
@@ -314,13 +317,15 @@ TConnection::recv_framing(){
             Buffer buf;
             buf.append(image.iov_base,image.iov_len);
             if(!server_->gethttp().onMessage(this,buf)){
-                LOG_DEBUG("Can't parse one package true\n");
+                LOG_WARN("Can't parse one package true\n");
             }else{
                 LOG_DEBUG("http response\n");
             }
             // 没收接收到有用的数据包，则丢弃多余的数据
             evbuffer_drain(input,framePos);
         }
+    }else{
+        LOG_WARN("evbuffer_peek has no data inside\n");
     }
 }
 

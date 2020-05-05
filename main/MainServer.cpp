@@ -176,7 +176,7 @@ void MainServer::handlerConn(void *args)
         }
 
         if(conn){
-            // 开启 connection 的 bufferevent
+            // 使用管道将指针发送给IOThread开启 connection 的 bufferevent
             conn->notify();
             // 所有的TConnection 由MainServer管理，但是分派到不同的线程中进行数据读取与发送
             activeTConnectionVector.push_back(conn);
@@ -191,10 +191,8 @@ void MainServer::returnTConnection(TConnection *conn){
     std::lock_guard<std::mutex> locker(connMutex);
     LOG_DEBUG("main server 回收 TConnection start ...\n");
 
-    // 获得 TConnection 包装的 socket
-    TSocket *sock = conn->getSocket();
-    // 回收 sock
-    listener_->returnTSocket(sock);
+    // 获得 TConnection 包装的 socket 回收 sock
+    listener_->returnTSocket(conn->getSocket());
     // 回收 TConnection : std::vector 中的删除形式
     activeTConnectionVector.erase(std::remove(activeTConnectionVector.begin(),activeTConnectionVector.end(), conn),
                             activeTConnectionVector.end());
