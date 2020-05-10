@@ -11,7 +11,8 @@ C_FLAGS := -std=c++11 -Wall -Wextra -ggdb
 DEBUG_CFLAGS := -std=c++11 -ggdb -Wall -ffunction-sections -O0 -Wno-format \
 -DDEBUG -DMYSQLPP_MYSQL_HEADERS_BURIED -DHAVE_SCHED_GET_PRIORITY_MAX -DLOG4CPP_FIX_ERROR_COLLISION -DLOG4CPP
 
-LIB := -L/usr/local/lib -levent -pthread -lhiredis -ljsoncpp -llog4cpp -lmysqlclient
+LIB := -I/usr/local/include -L/usr/lib64/mysql -L/usr/local/lib -I/usr/include/mysql -levent -pthread -lhiredis \
+	-ljson_linux-gcc-8_libmt -llog4cpp -lmysqlclient
 
 all:
 	mkdir -p $(BIN) && mkdir -p $(OUTPUT)
@@ -19,7 +20,7 @@ all:
 
 .PHONY: clean start
 clean:
-	rm -rf $(BIN) $(OUTPUT) vgcore* core .vscode/ipch
+	rm -rf $(BIN) $(OUTPUT) vgcore* core
 
 start:
 	./$(BIN)/$(EXECUTABLE)

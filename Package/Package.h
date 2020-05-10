@@ -7,8 +7,8 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
-#include <jsoncpp/json/reader.h>
-#include <jsoncpp/json/value.h>
+#include <json/reader.h>
+#include <json/value.h>
 
 #define ARRAY_SIZE(array)    (sizeof(array)/sizeof(*(array)))
 

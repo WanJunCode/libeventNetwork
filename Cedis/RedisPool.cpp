@@ -36,6 +36,7 @@ RedisPool::RedisPool(std::shared_ptr<RedisConfig> config)
 void RedisPool::init(){
 	for(unsigned int i=0;i<conns_min_;++i){
 		// 使用智能共享指针管理 redis 连接
+		// make sure redis.service havd started
 		auto redis = make_shared<Redis>(server_,port_,password_);
 		if(redis->is_valid()){								// 判断该连接是否可用
 			redis->setUseable();								// 设置为可用

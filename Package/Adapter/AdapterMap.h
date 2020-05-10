@@ -6,7 +6,7 @@
 #include "../ChatPackage.h"
 #include "ChatAdapter.h"
 #include "EchoAdapter.h"
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <map>
 
 class AdapterMap : public noncopyable{
