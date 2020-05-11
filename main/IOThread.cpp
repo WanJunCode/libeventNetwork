@@ -182,6 +182,7 @@ bool IOThread::notify(TConnection* conn) {
         // 写管道是非阻塞的，总是可写
         if (FD_ISSET(fd, &wfds)) {
             LOG_DEBUG("Thread [%d] send TConnection from write pipe where address at [%x]\n",pthread_self(),pos);
+            // 通过IOThread 的fd 管道发送关闭 socket 信号
             ret = send(fd, pos, kSize, 0);
             if (ret < 0) {
                 if (errno == EAGAIN) {
@@ -216,15 +217,18 @@ void IOThread::notifyHandler(evutil_socket_t fd, short which, void* v) {
         if (nBytes == kSize) {
             if (NULL == connection) {
                 // this is the command to stop our thread, exit the handler!
-                LOG_WARN("thread [%d] read BULL from read pipe to terminate itself\n",pthread_self());
+                LOG_WARN("thread [%d] read NULL from read pipe to terminate itself\n",pthread_self());
                 ioThread->breakLoop(false);
                 return;
             }
-            // 接收到一个完整的 TConnection
+            // TODO 接收到一个完整的 TConnection
             if (ioThread->getServer()->isActive(connection)) {
                 LOG_DEBUG("thread [%d] read TConnection from read pipe address at [%x]\n",pthread_self(),connection);
-                connection->transition();
+                // 在此执行关闭
+                // connection->transition();
             }
+            connection->transition();
+
         } else if (nBytes > 0) {
             // throw away these bytes and hope that next time we get a solid read
             LOG_WARN("notifyHandler: Bad read of %ld bytes, wanted %d\n", nBytes, kSize);

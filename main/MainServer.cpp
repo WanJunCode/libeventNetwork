@@ -23,20 +23,11 @@ void MainServer::httpcb(const HttpRequest& req,HttpResponse* resp){
     resp->setStatusMessage("OK");
     resp->setContentType("text/plain");
     resp->addHeader("Server", "CloudServer");
-
-    std::ostringstream oss;
-    oss<<"from :Cloud Server"<<endl;
-    oss<<"active TConnection size ="<<activeTConnectionVector.size()<<endl;
-    oss<<"reuseable TConnection size ="<<ReuseConnectionQueue.size()<<endl;
-    oss<<"active TSocket size = "<<listener_->getActiveSize()<<endl;
-    oss<<"reuseable TSocket size = "<<listener_->getSocketQueue()<<endl;
-    oss<<MysqlPool::getInstance()->debug();
-    resp->setBody(oss.str());
+    resp->setBody(dispatcher_->debug()+MysqlPool::getInstance()->debug());
 }
 
 MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t backlog)
     :port_(port),
-    selectIOThread_(0),
     maxBufferSize_(MAXBUFFERSIZE),            // 定义　bufferevent　最大的水位
     threadPoolSize_(poolSize),
     iothreadSize_(iothreadSize),
@@ -47,7 +38,6 @@ MainServer::MainServer(size_t port,size_t poolSize,size_t iothreadSize,size_t ba
 
 MainServer::MainServer(MainConfig *config)
     :config_(config){
-    selectIOThread_ = 0;
     port_ = config_->getPort();
     maxBufferSize_ = config_->getBufferSize();
     threadPoolSize_ = config_->getThreadPoolSize();
@@ -56,6 +46,25 @@ MainServer::MainServer(MainConfig *config)
 
     LOG_DEBUG("port [%lu], maxBufferSize_ = [%lu], threadPoolSize_ = [%lu], iothreadSize_ = [%lu], backlog_ = [%lu]\n",port_,maxBufferSize_,threadPoolSize_,iothreadSize_,backlog_);
     init();
+}
+
+MainServer::~MainServer(){
+    LOG_DEBUG("main server destructure ...\n");
+
+    for(size_t i=0;i<iothreads_.size();i++){
+        iothreads_[i]->breakLoop(false);
+    }
+
+    if(redisPool)
+        redisPool->exit();
+    
+    if(timerMgr_)
+        timerMgr_->stop();
+
+    // 线程池手动调用结束,防止程序退出时死锁
+    threadPool_->stop();
+    event_free(ev_stdin);
+    event_base_free(main_base);
 }
 
 // 主服务器初始化
@@ -73,6 +82,9 @@ void MainServer::init(){
     threadPool_->setMaxQueueSize(40);//设置线程池的最大线程数量
     threadPool_->start(POOL_SIZE);//开启线程
 
+    // 连接管理器
+    dispatcher_.reset(new TConnectionDispatcher(this));
+
     // TODO  使用信号量同步 IO Thread线程是否全部启动
     // 创建IO Thread vector 并添加到线程池 threadPool_ 中运行
     iothreads_.reserve(iothreadSize_);
@@ -84,6 +96,8 @@ void MainServer::init(){
         threadPool_->run(std::bind(&IOThread::runInThread,iothreads_.back().get()));
         // run( std::function<void()> task )
     }
+
+    // TConnection control
 
     redisPool = make_shared<RedisPool>(config_->redisConfig());
     redisPool->init();
@@ -106,37 +120,6 @@ void MainServer::init(){
     http.setHttpCallback(std::bind(&MainServer::httpcb,this,_1,_2));
 }
 
-MainServer::~MainServer(){
-    LOG_DEBUG("main server destructure ...\n");
-
-    for(size_t i=0;i<iothreads_.size();i++){
-        iothreads_[i]->breakLoop(false);
-    }
-
-    if(redisPool)
-        redisPool->exit();
-    
-    if(timerMgr_)
-        timerMgr_->stop();
-
-    LOG_DEBUG("Main server vector sockets size = [%lu]\n", activeTConnectionVector.size());
-    for (size_t i = 0; i < activeTConnectionVector.size(); i++){
-        ReuseConnectionQueue.push(activeTConnectionVector[i]);
-    }
-
-    LOG_DEBUG("Main server connection queue size = [%lu] \n", ReuseConnectionQueue.size());
-    while (!ReuseConnectionQueue.empty()){
-        TConnection *conn = ReuseConnectionQueue.front();
-        ReuseConnectionQueue.pop();
-        delete conn;
-    }
-
-    // 线程池手动调用结束,防止程序退出时死锁
-    threadPool_->stop();
-    event_free(ev_stdin);
-    event_base_free(main_base);
-}
-
 // 开启服务器
 void MainServer::serve(){
     LOG_DEBUG("serve() ... start \n");
@@ -154,77 +137,31 @@ void MainServer::serve(){
 }
 
 // server 处理 来自 transport 的 client_conn
-void MainServer::handlerConn(void *args)
+void MainServer::handlerConn(evutil_socket_t client)
 {
-    TSocket *sock = (TSocket *)args;
-    // LOG_DEBUG("main server handler client_conn \n");
-    // LOG_DEBUG("sock->getSocketFD() = [%d] \n", sock->getSocketFD());
-    // 将接受的 TSocket 包装成 TConnection ， 使用 main_server->eventbase
-    TConnection *conn;
-    {
-        std::lock_guard<std::mutex> locker(connMutex);
-        if (ReuseConnectionQueue.empty()){
-            ++selectIOThread_;
-            // Load balancing  负载均衡
-            selectIOThread_ = selectIOThread_ % IOTHREAD_SIZE;
-            // 选择 iothread 创建 TConnection
-            conn = new TConnection(sock, iothreads_[selectIOThread_].get());
-        }else{
-            conn = ReuseConnectionQueue.front();
-            ReuseConnectionQueue.pop();
-            conn->setSocket(sock);
-        }
-
-        if(conn){
-            // 使用管道将指针发送给IOThread开启 connection 的 bufferevent
-            conn->notify();
-            // 所有的TConnection 由MainServer管理，但是分派到不同的线程中进行数据读取与发送
-            activeTConnectionVector.push_back(conn);
-        }else{
-            LOG_DEBUG("socket --> TConnection 失败 ...\n");
-        }
-    }
+    dispatcher_->handleConn(client);
 }
 
-// TODO 
 void MainServer::returnTConnection(TConnection *conn){
-    std::lock_guard<std::mutex> locker(connMutex);
-    LOG_DEBUG("main server 回收 TConnection start ...\n");
-
-    // 获得 TConnection 包装的 socket 回收 sock
-    listener_->returnTSocket(conn->getSocket());
-    // 回收 TConnection : std::vector 中的删除形式
-    activeTConnectionVector.erase(std::remove(activeTConnectionVector.begin(),activeTConnectionVector.end(), conn),
-                            activeTConnectionVector.end());
-
-    // ReuseConnectionQueue 中 conn 都带有一个关闭的 TSocket
-    // 断开 TConnection 与 TSocket 之间的关系
-    conn->setSocket(NULL);
-    ReuseConnectionQueue.push(conn);
+    dispatcher_->returnTConnection(conn);
 }
 
 bool MainServer::isActive(TConnection *conn) const{
-    auto iter = find(activeTConnectionVector.begin(),activeTConnectionVector.end(),conn);
-    if(iter!= activeTConnectionVector.end()){
-        return true;
-    }else{
-        return false;
-    }
+    return dispatcher_->isActive(conn);
 }
 
 void MainServer::heartBeat(){
-    for(auto conn : activeTConnectionVector)
-    {
-        conn->heartBeat();
-    }
+    dispatcher_->heartBeat();
 }
 
 void MainServer::execute(std::string cmd,MainServer *server){
     if (cmd == "list"){
+#if 0
         LOG_DEBUG("MainServer 激活的 TConnection size %lu\n", server->activeTConnectionVector.size());
         LOG_DEBUG("MainServer 可复用的 TConnection size %lu\n", server->ReuseConnectionQueue.size());
         LOG_DEBUG("PortListener 激活的 TSocket size = %d\n",server->listener_->getActiveSize());
         LOG_DEBUG("PortListener 可复用的 TSocket size = %d\n",server->listener_->getSocketQueue());
+#endif
         MysqlPool::getInstance()->debug();
     }else if(cmd == "hb"){
         LOG_DEBUG("heart beat\n");

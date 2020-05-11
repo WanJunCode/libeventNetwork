@@ -1,18 +1,5 @@
 #include "PortListener.h"
-
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <event.h>
-#include <event2/listener.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <assert.h>
-#include <memory>
-
 #include "MainServer.h"
-#include "TSocket.h"
 #include "logcpp.h"
 
 PortListener::PortListener(size_t backlog)
@@ -25,16 +12,7 @@ PortListener::~PortListener(){
         evconnlistener_free(listener_);
         listener_ = NULL;
     }
-
-    // 清除  socket queue
-    LOG_DEBUG("listener size = [%lu]\n", reuseSocketQueue.size());
-    while (!reuseSocketQueue.empty()){
-        TSocket *tmp = reuseSocketQueue.front();
-        LOG_DEBUG("tsock tmp %x\n",tmp);
-        reuseSocketQueue.pop();
-        delete tmp;
-    }
-    LOG_DEBUG("listener size = [%lu]\n", reuseSocketQueue.size());
+    LOG_DEBUG("PortListener dtor...\n");
 }
 
 // TODO listen函数从外部获得 struct event_base 用于注册监听回调函数
@@ -60,34 +38,6 @@ void PortListener::listen(MainServer *server, int port){
     // evutil_make_listen_socket_reuseable(listener_fd);
 }
 
-TSocket *PortListener::ReuseTSocket(evutil_socket_t client_fd){
-#if 0
-    // 判断客户端文件描述符是否已经存在activeSocket map中
-    auto iter = activeSocket.find(client_fd);
-    if (iter != activeSocket.end()){
-        perror("client 已经处于 active 状态 ...\n");
-        activeSocket.erase(iter);
-    }
-#endif
-    // !! client fd 设置为非阻塞
-    evutil_make_socket_nonblocking(client_fd);
-    TSocket *sock = NULL;
-    // RAII 最佳实践 (保护资源 )
-    std::lock_guard<std::mutex> locker(connMutex_);
-    // 复用一个 TSocket 完成对 client fd 的封装
-    if (reuseSocketQueue.empty()){
-        // 没有可复用的则创建新的 TSocket
-        sock = new TSocket(client_fd);
-    }else{
-        // 在此处将最前端的TSocket复用，后面会 pop 弹出
-        sock = reuseSocketQueue.front();
-        sock->setSocketFD(client_fd);
-        reuseSocketQueue.pop();
-    }
-    activeSocket.insert(std::pair<evutil_socket_t, TSocket *>(client_fd, sock));
-    return sock;
-}
-
 // 监听回调函数
 // static
 void PortListener::do_accept(struct evconnlistener *listener, evutil_socket_t client_fd,
@@ -95,38 +45,7 @@ void PortListener::do_accept(struct evconnlistener *listener, evutil_socket_t cl
     UNUSED(listener);
     UNUSED(addr);
     UNUSED(socklen);
-    // LOG_DEBUG("new client connection [%d]...\n", client_fd);
+    LOG_DEBUG("new client connection [%d]...\n", client_fd);
     MainServer *server = (MainServer *)args;
-    std::shared_ptr<PortListener> portListenser = server->getListener();
-    TSocket *sock = portListenser->ReuseTSocket(client_fd);
-    server->handlerConn(sock);
-}
-
-void PortListener::returnTSocket(TSocket *sock){
-    LOG_DEBUG("listener return TSocket \n");
-    {
-        // 从 active map 中删除
-        std::lock_guard<std::mutex> locker(connMutex_);
-        auto iter = activeSocket.find(sock->getSocketFD());
-        if (iter != activeSocket.end()){
-            LOG_DEBUG("active socket map erase sock [%d]\n",iter->first);
-            activeSocket.erase(iter);
-        }else{
-            LOG_DEBUG("activeSocket 中没找到...\n");
-        }
-        
-        sock->close();
-
-        // 关闭回收的TSocket连接
-        // delete sock;
-        reuseSocketQueue.push(sock);
-    }
-}
-
-int PortListener::getActiveSize(){
-    return activeSocket.size();
-}
-
-int PortListener::getSocketQueue(){
-    return reuseSocketQueue.size();
+    server->handlerConn(client_fd);
 }

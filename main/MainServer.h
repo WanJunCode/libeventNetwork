@@ -3,10 +3,12 @@
 
 #include "PortListener.h"
 #include "TSocket.h"
-#include "TConnection.h"
 #include "ThreadPool.h"
 #include "IOThread.h"
 #include "MainConfig.h"
+#include "TConnectionDispatcher.h"
+#include "TConnectionDispatcher.h"
+
 #include "../Cedis/RedisPool.h"
 #include "../Package/MultipleProtocol.h"
 #include "../Package/Adapter/Adapter.h"
@@ -28,6 +30,7 @@
 #define IOTHREAD_SIZE 10
 
 //　尽量避免使用前置声明
+class TConnectionDispatcher;
 
 class MainServer: public noncopyable{
 public:
@@ -37,7 +40,7 @@ public:
     ~MainServer();
 
     void serve();
-    void handlerConn(void *args);
+    void handlerConn(evutil_socket_t client);
     void returnTConnection(TConnection *conn);
     bool isActive(TConnection *conn) const;
     void heartBeat();
@@ -58,13 +61,19 @@ public:
     inline int getBufferSize() const{
         return maxBufferSize_;
     }
-
     HttpServer& gethttp(){
         return http;
     }
-
     std::shared_ptr<PortListener> getListener(){
         return listener_;
+    }
+
+    IOThread *getRandomIOThread(){
+        static size_t selectNum = 0;
+        selectNum++;
+        // load balance
+        selectNum = selectNum %  iothreads_.size();
+        return iothreads_[selectNum].get();
     }
 
     void httpcb(const HttpRequest& req,HttpResponse* resp);
@@ -76,25 +85,19 @@ private:
     MainConfig *config_;
 
     size_t port_;
-    size_t selectIOThread_;
     size_t maxBufferSize_;
     size_t threadPoolSize_;
     size_t iothreadSize_;
     size_t backlog_;
-    std::mutex connMutex; // 处理连接时，以及返回连接时候
 
     std::unique_ptr<MThreadPool> threadPool_;
+    std::shared_ptr<TConnectionDispatcher> dispatcher_;
     std::shared_ptr<RedisPool> redisPool;   	// redis 连接池
     std::shared_ptr<Protocol> protocol_;     	// 协议解析器
     std::shared_ptr<PortListener> listener_; 	// 监听器
     std::shared_ptr<TimerManager> timerMgr_;
-    
-
     // 使用共享智能指针
     std::vector<std::shared_ptr<IOThread>> iothreads_;
-    // 活动的连接
-    std::vector<TConnection *> activeTConnectionVector;
-    std::queue<TConnection *> ReuseConnectionQueue;
 
     HttpServer http;
 

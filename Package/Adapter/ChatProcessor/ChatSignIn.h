@@ -9,7 +9,7 @@ public:
 
     }
     ~ChatSignIn(){
-        LOG_DEBUG("chat sign in destory\n");
+        
     }
 
     Package *process(Json::Value &root) override;

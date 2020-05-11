@@ -89,3 +89,8 @@ data:
 tail:
     crc32 校验
     tailflag
+
+2020.5.10 wanjun
+refactoring MainServer & PortListener -> TConnectionDispatcher
+class TConnectionDispatcher control TSocket and TConnection for each IOThread
+make std::map as ActiveTConnection's low level implement for hign performence of finding and erasing

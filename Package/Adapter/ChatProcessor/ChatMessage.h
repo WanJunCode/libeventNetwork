@@ -9,7 +9,7 @@ public:
 
     }
     ~ChatMessage(){
-        LOG_DEBUG("chat message destory\n");
+        
     }
 
     Package *process(Json::Value &root) override;

@@ -49,6 +49,7 @@ public:
     void close();
     bool notify();
     void heartBeat();
+    int getFd() { return fd;}
     void record(std::string message);
 
     void workSocket();
@@ -100,6 +101,7 @@ private:
     /// Read buffer
     size_t frameSize_;
     size_t maxBufferSize_;
+    int fd;
 
 private:
     static void read_cb(struct bufferevent *bev, void *args);

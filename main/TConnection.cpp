@@ -44,6 +44,7 @@ TConnection::TConnection(TSocket *sock, MainServer *server)
     : socket_(sock),
     server_(server),
     base_(server_->getBase()),
+    bev(nullptr),
     appstate(AppState::APP_CLOSE_CONNECTION){
     LOG_DEBUG("TConnection structure ... socket [%d]\n", socket_->getSocketFD());
     init();
@@ -53,7 +54,8 @@ TConnection::TConnection(TSocket *sock, MainServer *server)
 TConnection::TConnection(TSocket *sock, IOThread *iothread)
     : socket_(sock),
     iothread_(iothread),
-    base_(iothread_->getBase()){
+    base_(iothread_->getBase()),
+    bev(nullptr){
     server_ = iothread_->getServer();
     if(server_ == NULL){
         LOG_FATAL("iothread get server but is null\n");
@@ -78,12 +80,19 @@ TConnection::~TConnection(){
 void 
 TConnection::init(){
     // 默认是五秒钟心跳间隔
+    fd = socket_->getSocketFD();
     heartBeat_ = 30;
     appstate = AppState::TRANS_INIT;
     socketState = SocketState::SOCKET_RECV_FRAMING;
 
     lastUpdate_=time(NULL);
     maxBufferSize_ = server_->getBufferSize();
+
+    if(bev != NULL){
+        // 释放 TSocket 上建立的 bufferevent
+        bufferevent_free(bev);
+        bev = NULL;
+    }
 
     bev = bufferevent_socket_new(base_, socket_->getSocketFD(),BEV_OPT_CLOSE_ON_FREE);
     if (bev) {
@@ -116,7 +125,7 @@ TConnection::init(){
         readWant_ = 0;
         frameSize_ = 0;
     } else {
-        LOG_DEBUG("TConnection create bufferevent fail ...\n");
+        LOG_ERROR("TConnection create bufferevent fail ...\n");
     }
 }
 
@@ -246,7 +255,7 @@ TConnection::heartBeat(){
         // 如果不使用 notify 来关闭连接，会导致bufferevent 复用bug
         if(!notify()){
             LOG_DEBUG("fail to notify tconnection\n");
-            close();    
+            close();
         }
     }
 }

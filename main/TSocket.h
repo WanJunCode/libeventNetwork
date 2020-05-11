@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <string>
 #include <event2/util.h>
+#include "logcpp.h"
 
 #define INVALID_SOCKET -1
 

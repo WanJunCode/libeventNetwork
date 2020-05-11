@@ -58,6 +58,21 @@
         "bitset": "cpp",
         "complex": "cpp",
         "typeindex": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "iterator": "cpp",
+        "map": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "set": "cpp",
+        "string": "cpp",
+        "concepts": "cpp",
+        "queue": "cpp",
+        "xmemory": "cpp",
+        "xstddef": "cpp",
+        "xstring": "cpp",
+        "xtr1common": "cpp",
+        "xutility": "cpp",
+        "xtree": "cpp"
     }
 }
