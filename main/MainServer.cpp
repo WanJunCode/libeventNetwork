@@ -82,7 +82,7 @@ void MainServer::init(){
     threadPool_->setMaxQueueSize(40);//设置线程池的最大线程数量
     threadPool_->start(POOL_SIZE);//开启线程
 
-    // 连接管理器
+    // TConnection control 连接管理器
     dispatcher_.reset(new TConnectionDispatcher(this));
 
     // TODO  使用信号量同步 IO Thread线程是否全部启动
@@ -92,12 +92,9 @@ void MainServer::init(){
         // 创建新的 IOThread 并添加到线程池中
         iothreads_.push_back(std::make_shared<IOThread>(this));
         // std::shared_ptr<>::get() 获得原始指针
-        // 将 IOThread::runInThread 函数作为线程执行函数传入
+        // 将 IOThread::runInThread 函数作为线程执行函数传入   run( std::function<void()> task )
         threadPool_->run(std::bind(&IOThread::runInThread,iothreads_.back().get()));
-        // run( std::function<void()> task )
     }
-
-    // TConnection control
 
     redisPool = make_shared<RedisPool>(config_->redisConfig());
     redisPool->init();
@@ -127,18 +124,16 @@ void MainServer::serve(){
     ev_stdin = event_new(main_base, STDIN_FILENO, EV_READ | EV_PERSIST, stdinCallBack, this);
     event_add(ev_stdin, NULL);
 
-    // 将 MainServer 提供self作为回调函数参数
-    // 当有新的连接，会回调 MainServer::handlerConn 函数
+    // 在mainserver的event_base上进行循环 当有新的连接，会回调 MainServer::handlerConn 函数
     listener_->listen(this,port_);
 
-    // !! import 开启整个程序的主循环
+    // ! import 开启整个程序的主循环
     event_base_dispatch(main_base);
     LOG_DEBUG("serve() ... end \n");
 }
 
 // server 处理 来自 transport 的 client_conn
-void MainServer::handlerConn(evutil_socket_t client)
-{
+void MainServer::handlerConn(evutil_socket_t client){
     dispatcher_->handleConn(client);
 }
 
@@ -154,8 +149,35 @@ void MainServer::heartBeat(){
     dispatcher_->heartBeat();
 }
 
-void MainServer::execute(std::string cmd,MainServer *server){
-    if (cmd == "list"){
+
+static std::string getCommand(evutil_socket_t fd){
+    char recvline[80];
+    bzero(recvline,sizeof(recvline));
+    int length = read(fd, recvline, sizeof(recvline));
+    if(length>1){
+        length--;
+    }
+    recvline[length]='\0';
+    std::string cmd(recvline);
+    return cmd;
+}
+
+// static
+void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args){
+    UNUSED(what);
+    MainServer *server = static_cast<MainServer *>(args);
+    std::string command = getCommand(stdin_fd);
+    if (command == "over"){
+        event_base_loopbreak(server->getBase());
+    }else{
+        executeCommand(command,server);
+    }  
+}
+
+// static
+void MainServer::executeCommand(std::string command,MainServer *server){
+    if (command == "list"){
+        // TODO
 #if 0
         LOG_DEBUG("MainServer 激活的 TConnection size %lu\n", server->activeTConnectionVector.size());
         LOG_DEBUG("MainServer 可复用的 TConnection size %lu\n", server->ReuseConnectionQueue.size());
@@ -163,30 +185,10 @@ void MainServer::execute(std::string cmd,MainServer *server){
         LOG_DEBUG("PortListener 可复用的 TSocket size = %d\n",server->listener_->getSocketQueue());
 #endif
         MysqlPool::getInstance()->debug();
-    }else if(cmd == "hb"){
+    }else if(command == "hb"){
         LOG_DEBUG("heart beat\n");
         server->heartBeat();
     }else{
-        // LOG_DEBUG("cmd error...\n");
+        LOG_DEBUG("command error...\n");
     }
 }
-
-// static
-void MainServer::stdinCallBack(evutil_socket_t stdin_fd, short what, void *args){
-    UNUSED(what);
-    MainServer *server = static_cast<MainServer *>(args);
-    char recvline[80];
-    bzero(recvline,sizeof(recvline));
-    int length = read(stdin_fd, recvline, sizeof(recvline));
-    if(length>1)
-        length--;
-    recvline[length] = '\0';
-
-    std::string cmd(recvline);
-    if (cmd == "over"){
-        event_base_loopbreak(server->getBase());
-    }else{
-        execute(cmd,server);
-    }  
-}
-

@@ -7,7 +7,6 @@
 #include "IOThread.h"
 #include "MainConfig.h"
 #include "TConnectionDispatcher.h"
-#include "TConnectionDispatcher.h"
 
 #include "../Cedis/RedisPool.h"
 #include "../Package/MultipleProtocol.h"
@@ -36,8 +35,8 @@ class MainServer: public noncopyable{
 public:
     MainServer(size_t port = 12345, size_t poolSize = 20, size_t iothreadSize = 10, size_t backlog = 10);
     MainServer(MainConfig *config);
-    void init();
     ~MainServer();
+    void init();
 
     void serve();
     void handlerConn(evutil_socket_t client);
@@ -46,25 +45,27 @@ public:
     void heartBeat();
 
     void run(MThreadPool::Task task){
-        threadPool_->run(task);
+        if(threadPool_){
+            threadPool_->run(task);
+        }
     }
 
-    std::shared_ptr<Protocol> getProtocol(){
-        return protocol_;
-    }
     struct event_base *getBase(){
         return main_base;
+    }    
+    inline int getBufferSize() const{
+        return maxBufferSize_;
+    }
+    inline std::shared_ptr<Protocol> getProtocol(){
+        return protocol_;
     }
     inline std::shared_ptr<Redis> getRedis(){
         return redisPool->grabCedis();
     }
-    inline int getBufferSize() const{
-        return maxBufferSize_;
-    }
-    HttpServer& gethttp(){
+    inline HttpServer& gethttp(){
         return http;
     }
-    std::shared_ptr<PortListener> getListener(){
+    inline std::shared_ptr<PortListener> getListener(){
         return listener_;
     }
 
@@ -99,11 +100,11 @@ private:
     // 使用共享智能指针
     std::vector<std::shared_ptr<IOThread>> iothreads_;
 
-    HttpServer http;
+    HttpServer http;                            // 实例
 
 private:
     static void stdinCallBack(evutil_socket_t stdin_fd, short what, void *args);
-    static void execute(std::string cmd, MainServer *server);
+    static void executeCommand(std::string cmd, MainServer *server);
 };
 
 #endif // LIBNETWORK_MAIN_MAINSERVER_H_

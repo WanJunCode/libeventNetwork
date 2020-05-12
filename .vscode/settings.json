@@ -73,6 +73,8 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xutility": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "stack": "cpp",
+        "xhash": "cpp"
     }
 }
